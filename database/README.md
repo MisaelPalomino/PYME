@@ -23,8 +23,6 @@ sudo docker compose down
 ```bash
 ./scripts/enter_psql.sh
 ```
-```
-```
 
 ## Datos autenticacion
  En .env
