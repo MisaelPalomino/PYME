@@ -22,17 +22,17 @@ type SidebarItem = {
 
 const navItems: SidebarItem[] = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/products', icon: Package, label: 'Productos' },
-  { to: '/categories', icon: Tag, label: 'Categorías' },
-  { to: '/movements', icon: ArrowLeftRight, label: 'Movimientos' },
-  { to: '/inventory', icon: Warehouse, label: 'Inventario' },
-  { to: '/predictions', icon: Brain, label: 'Predicciones' },
-  { to: '/alerts', icon: Bell, label: 'Alertas' },
-  { to: '/orders', icon: ShoppingBag, label: 'Pedidos' },
-  { to: '/reports', icon: BarChart3, label: 'Informes' },
-  { to: '/suppliers', icon: Truck, label: 'Proveedores' },
-  { to: '/users', icon: Users, label: 'Usuarios' },
-  { to: '/settings', icon: Settings, label: 'Configuración' },
+  { to: '/productos', icon: Package, label: 'Productos' },
+  { to: '/categorias', icon: Tag, label: 'Categorías' },
+  { to: '/movimientos', icon: ArrowLeftRight, label: 'Movimientos' },
+  { to: '/inventario', icon: Warehouse, label: 'Inventario' },
+  { to: '/predicciones', icon: Brain, label: 'Predicciones' },
+  { to: '/alertas', icon: Bell, label: 'Alertas' },
+  { to: '/pedidos', icon: ShoppingBag, label: 'Pedidos' },
+  { to: '/informes', icon: BarChart3, label: 'Informes' },
+  { to: '/proveedores', icon: Truck, label: 'Proveedores' },
+  { to: '/usuarios', icon: Users, label: 'Usuarios' },
+  { to: '/configuracion', icon: Settings, label: 'Configuración' },
 ];
 
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {

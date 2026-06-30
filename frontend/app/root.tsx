@@ -12,6 +12,7 @@ import "./app.css"
 import { useState } from "react";
 import { Sidebar } from "~/components/layout/Sidebar";
 import { Header } from "~/components/layout/Header";
+import { AuthProvider, useAuth } from "~/context/AuthContext";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -31,9 +32,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   )
 }
 
-export default function App() {
+function AppLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,7 +50,7 @@ export default function App() {
         <Header
           onMenuClick={() => setMobileOpen(true)}
           sidebarCollapsed={sidebarCollapsed}
-          currentUser={{name: "Esdras", role: "Administrador"}}
+          currentUser={user ? { name: user.nombre, role: user.rol } : { name: "Invitado", role: "Sin rol" }}
         />
 
         <main className="pt-16 min-h-screen">
@@ -57,9 +59,15 @@ export default function App() {
           </div>
         </main>
       </div>
-
-      { /*<QuickAccessPanel />*/}
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppLayout />
+    </AuthProvider>
   );
 }
 
