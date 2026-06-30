@@ -17,11 +17,18 @@ export const productosAPI = {
   delete: (id: number) => api.delete(`/core/productos/${id}/`),
 };
 
+export type Categoria = {
+  id_categoria: number;
+  nombre: string;
+  descripcion: string;
+}
+
+// FIXME: Maybe the types are wrong
 export const categoriasAPI = {
-  getAll: () => api.get('/core/categorias/'),
-  getOne: (id: number) => api.get(`/core/categorias/${id}/`),
-  create: (data: any) => api.post('/core/categorias/', data),
-  update: (id: number, data: any) => api.put(`/core/categorias/${id}/`, data),
+  getAll: () => api.get<Categoria[]>('/core/categorias/'),
+  getOne: (id: number) => api.get<Categoria>(`/core/categorias/${id}/`),
+  create: (data: Categoria) => api.post('/core/categorias/', data),
+  update: (id: number, data: Categoria) => api.put(`/core/categorias/${id}/`, data),
   delete: (id: number) => api.delete(`/core/categorias/${id}/`),
 };
 

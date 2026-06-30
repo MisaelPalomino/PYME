@@ -1,41 +1,24 @@
 import { useState, useEffect } from 'react';
-import { categoriasAPI } from '~/api/api';
+import { categoriasAPI, type Categoria } from '~/api/api';
 import { Button } from '~/components/ui/button';
 import { useAuth } from '~/context/AuthContext';
+import type { Route } from "./+types/categorias";
 
-interface Categoria {
-  id_categoria: number;
-  nombre: string;
-  descripcion: string;
+
+export async function loader() {
+  const response = await categoriasAPI.getAll();
+  return {
+    categorias: response.data
+  };
 }
 
-export default function Categorias() {
+export default function Categorias({ loaderData }: Route.ComponentProps) {
   const { user } = useAuth();
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editId, setEditId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ nombre: '', descripcion: '' });
 
   const isAdmin = user?.rol?.toLowerCase() === 'administrador';
-
-  const cargarCategorias = async () => {
-    setLoading(true);
-    try {
-      const response = await categoriasAPI.getAll();
-      setCategorias(response.data);
-      setError('');
-    } catch (error) {
-      setError('Error al cargar categorías');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    cargarCategorias();
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +26,7 @@ export default function Categorias() {
       setError('No tienes permisos para realizar esta acción');
       return;
     }
-    setLoading(true);
+    // setLoading(true);
     try {
       const data = {
         nombre: formData.nombre,
@@ -55,14 +38,14 @@ export default function Categorias() {
       } else {
         await categoriasAPI.create(data);
       }
-      
+
       resetForm();
-      cargarCategorias();
+      // cargarCategorias();
     } catch (error) {
       setError('Error al guardar la categoría');
       console.error(error);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -91,7 +74,7 @@ export default function Categorias() {
     if (!confirm('¿Estás seguro de eliminar esta categoría?')) return;
     try {
       await categoriasAPI.delete(id);
-      cargarCategorias();
+      // cargarCategorias();
     } catch (error) {
       setError('Error al eliminar la categoría');
     }
@@ -157,63 +140,59 @@ export default function Categorias() {
         </div>
       )}
 
-      {loading ? (
-        <div className="text-center py-8">Cargando...</div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">ID</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Nombre</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Descripción</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {loaderData.categorias.length === 0 ? (
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">ID</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Nombre</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Descripción</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Acciones</th>
+                  <td colSpan={4} className="px-4 py-4 text-center text-gray-500">
+                    No hay categorías
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y">
-                {categorias.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-4 text-center text-gray-500">
-                      No hay categorías
+              ) : (
+                loaderData.categorias.map((cat) => (
+                  <tr key={cat.id_categoria} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm">{cat.id_categoria}</td>
+                    <td className="px-4 py-3 text-sm font-medium">{cat.nombre}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {cat.descripcion || <span className="text-gray-400">Sin descripción</span>}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {isAdmin ? (
+                        <>
+                          <button
+                            className="px-2 py-1 text-blue-600 hover:text-blue-800 mr-2"
+                            onClick={() => handleEdit(cat)}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            className="px-2 py-1 text-red-600 hover:text-red-800"
+                            onClick={() => handleDelete(cat.id_categoria)}
+                          >
+                            🗑️
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-gray-400 text-xs">🔒 Solo admin</span>
+                      )}
                     </td>
                   </tr>
-                ) : (
-                  categorias.map((cat) => (
-                    <tr key={cat.id_categoria} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm">{cat.id_categoria}</td>
-                      <td className="px-4 py-3 text-sm font-medium">{cat.nombre}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {cat.descripcion || <span className="text-gray-400">Sin descripción</span>}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {isAdmin ? (
-                          <>
-                            <button
-                              className="px-2 py-1 text-blue-600 hover:text-blue-800 mr-2"
-                              onClick={() => handleEdit(cat)}
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              className="px-2 py-1 text-red-600 hover:text-red-800"
-                              onClick={() => handleDelete(cat.id_categoria)}
-                            >
-                              🗑️
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-gray-400 text-xs">🔒 Solo admin</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 }
