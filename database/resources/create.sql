@@ -12,13 +12,13 @@ CREATE TABLE IF NOT EXISTS "usuario" (
 	PRIMARY KEY ("id_usuario")
 );
 CREATE TABLE IF NOT EXISTS "categoria" (
-	"id_categoria" integer NOT NULL,
+	"id_categoria" serial NOT NULL,
 	"nombre" varchar(255) NOT NULL,
 	"descripcion" text NOT NULL,
 	PRIMARY KEY ("id_categoria")
 );
 CREATE TABLE IF NOT EXISTS "producto" (
-	"id_producto" integer NOT NULL,
+	"id_producto" serial NOT NULL,
 	"descripcion" text NOT NULL,
 	"stock_actual" integer NOT NULL,
 	"stock_minimo" integer NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS "producto" (
 	PRIMARY KEY ("id_producto")
 );
 CREATE TABLE IF NOT EXISTS "proveedor" (
-	"id_proveedor" integer NOT NULL,
+	"id_proveedor" serial NOT NULL,
 	"nombre" varchar(255) NOT NULL,
 	"contacto" varchar(255) NOT NULL,
 	"correo" varchar(255) NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS "proveedor" (
 	PRIMARY KEY ("id_proveedor")
 );
 CREATE TABLE IF NOT EXISTS "movimiento_inventario" (
-	"id_movimiento" integer NOT NULL,
+	"id_movimiento" serial NOT NULL,
 	"tipo_movimiento" varchar(255) NOT NULL,
 	"fecha" timestamp with time zone NOT NULL,
 	"cantidad" integer NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS "movimiento_inventario" (
 	PRIMARY KEY ("id_movimiento")
 );
 CREATE TABLE IF NOT EXISTS "pedido" (
-	"id_pedido" integer NOT NULL,
+	"id_pedido" serial NOT NULL,
 	"fecha_envio" timestamp,
 	"fecha_recepcion" timestamp,
 	"id_proveedor" integer NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS "pedido" (
 	PRIMARY KEY ("id_pedido")
 );
 CREATE TABLE IF NOT EXISTS "detalle_pedido" (
-	"id_detalle" integer NOT NULL,
+	"id_detalle" serial NOT NULL,
 	"precio_unitario" decimal NOT NULL,
 	"id_pedido" integer NOT NULL,
 	"id_producto" integer NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS "detalle_pedido" (
 	PRIMARY KEY ("id_detalle")
 );
 CREATE TABLE IF NOT EXISTS "alerta" (
-	"id_alerta" integer NOT NULL,
+	"id_alerta" serial NOT NULL,
 	"mensaje"text NOT NULL,
 	"fecha_creacion" timestamp with time zone NOT NULL,
 	"leida" boolean NOT NULL,
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS "alerta" (
 	PRIMARY KEY ("id_alerta")
 );
 CREATE TABLE IF NOT EXISTS "notificacion" (
-	"id_notificacion" integer NOT NULL,
+	"id_notificacion" serial NOT NULL,
 	"id_usuario" integer NOT NULL,
 	"fecha_creacion" timestamp with time zone NOT NULL,
 	"leida" boolean NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS "notificacion" (
 	PRIMARY KEY ("id_notificacion")
 );
 CREATE TABLE IF NOT EXISTS "prediccion" (
-	"id_prediccion" integer NOT NULL,
+	"id_prediccion" serial NOT NULL,
 	"id_producto" integer NOT NULL,
 	"fecha_generacion" timestamp with time zone NOT NULL,
 	"horizonte_dias" integer NOT NULL,
@@ -95,10 +95,10 @@ CREATE TABLE IF NOT EXISTS "prediccion" (
 	PRIMARY KEY ("id_prediccion")
 );
 
-CREATE TYPE MODELO_ESTADO AS ENUM ('Entrenado', 'Sin_datos', 'Desactualizado');
+CREATE TYPE MODELO_ESTADO AS ENUM ('entrenado', 'sin_datos', 'desactualizado');
 
-CREATE TABLE IF NOT EXISTS "modeloIA" (
-	"id_modelo" integer NOT NULL,
+CREATE TABLE IF NOT EXISTS "modelo_ia" (
+	"id_modelo" serial NOT NULL,
 	"id_producto" integer NOT NULL,
 	"fecha_entrenamiento" timestamp with time zone NOT NULL,
 	"mae" numeric(10,0) NOT NULL,
@@ -117,4 +117,37 @@ ALTER TABLE "detalle_pedido" ADD CONSTRAINT "detalle_pedido_fk3" FOREIGN KEY ("i
 ALTER TABLE "alerta" ADD CONSTRAINT "alerta_fk4" FOREIGN KEY ("id_producto") REFERENCES "producto"("id_producto");
 ALTER TABLE "notificacion" ADD CONSTRAINT "notificacion_fk1" FOREIGN KEY ("id_usuario") REFERENCES "usuario"("id_usuario");
 ALTER TABLE "prediccion" ADD CONSTRAINT "prediccion_fk1" FOREIGN KEY ("id_producto") REFERENCES "producto"("id_producto");
-ALTER TABLE "modeloIA" ADD CONSTRAINT "modeloIA_fk1" FOREIGN KEY ("id_producto") REFERENCES "producto"("id_producto");
+ALTER TABLE "modelo_ia" ADD CONSTRAINT "modeloIA_fk1" FOREIGN KEY ("id_producto") REFERENCES "producto"("id_producto");
+
+CREATE UNIQUE INDEX idx_producto_sku
+ON producto(sku);
+
+CREATE INDEX idx_producto_categoria
+ON producto(id_categoria);
+
+CREATE INDEX idx_producto_stock
+ON producto(stock_actual);
+
+CREATE INDEX idx_movimiento_producto_fecha
+ON movimiento_inventario(id_producto, fecha DESC);
+
+CREATE INDEX idx_pedido_estado
+ON pedido(estado);
+
+CREATE INDEX idx_pedido_proveedor
+ON pedido(id_proveedor);
+
+CREATE INDEX idx_pedido_fecha
+ON pedido(fecha_creacion);
+
+CREATE INDEX idx_prediccion_producto
+ON prediccion(id_producto);
+
+CREATE INDEX idx_modelo_producto
+ON "modelo_ia"(id_producto);
+
+CREATE INDEX idx_alerta_leida
+ON alerta(leida);
+
+CREATE INDEX idx_notificacion_leida
+ON notificacion(leida);
