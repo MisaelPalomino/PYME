@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, Tag, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Package, Tag, Truck, type LucideIcon } from "lucide-react";
 
 type NavigationItem = {
   url: string
@@ -26,5 +26,11 @@ export const navigation: NavigationItem[] = [
     path: "routes/categorias.tsx",
     label: "Categorías",
     icon: Tag,
+  },
+  {
+    url: "proveedores",
+    path: "routes/proveedores.tsx",
+    label: "Proveedores",
+    icon: Truck,
   }
 ];
