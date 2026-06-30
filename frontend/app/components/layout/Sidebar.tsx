@@ -1,10 +1,9 @@
 import {
-  LayoutDashboard, Package, Tag, ArrowLeftRight, Warehouse,
-  Brain, Bell, ShoppingBag, BarChart3, Truck, Users, Settings,
+  Warehouse,
   ChevronLeft, ChevronRight, X,
-  type LucideIcon
 } from 'lucide-react';
 import { NavLink } from 'react-router';
+import { navigation } from '~/lib/navigation';
 
 type SidebarProps = {
   collapsed: boolean,
@@ -12,28 +11,6 @@ type SidebarProps = {
   mobileOpen: boolean,
   onMobileClose: () => void,
 }
-
-type SidebarItem = {
-  to: string,
-  icon: LucideIcon,
-  label: string,
-  end?: true,
-}
-
-const navItems: SidebarItem[] = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/productos', icon: Package, label: 'Productos' },
-  { to: '/categorias', icon: Tag, label: 'Categorías' },
-  { to: '/movimientos', icon: ArrowLeftRight, label: 'Movimientos' },
-  { to: '/inventario', icon: Warehouse, label: 'Inventario' },
-  { to: '/predicciones', icon: Brain, label: 'Predicciones' },
-  { to: '/alertas', icon: Bell, label: 'Alertas' },
-  { to: '/pedidos', icon: ShoppingBag, label: 'Pedidos' },
-  { to: '/informes', icon: BarChart3, label: 'Informes' },
-  { to: '/proveedores', icon: Truck, label: 'Proveedores' },
-  { to: '/usuarios', icon: Users, label: 'Usuarios' },
-  { to: '/configuracion', icon: Settings, label: 'Configuración' },
-];
 
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   return (
@@ -73,27 +50,28 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
         {/* Nav items */}
         <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
           <ul className="space-y-1 px-2">
-            {navItems.map(({ to, icon: Icon, label, end }) => (
-              <li key={to}>
-                <NavLink
-                  to={to}
-                  end={end}
-                  onClick={onMobileClose}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm
+            {
+              navigation.map(({ url, icon: Icon, label }) => (
+                <li key={url}>
+                  <NavLink
+                    to={url}
+                    onClick={onMobileClose}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm
                     ${isActive
-                      ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                    }
+                        ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                      }
                     ${collapsed ? 'justify-center' : ''}`
-                  }
-                  title={collapsed ? label : undefined}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {!collapsed && <span className="truncate">{label}</span>}
-                </NavLink>
-              </li>
-            ))}
+                    }
+                    title={collapsed ? label : undefined}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {!collapsed && <span className="truncate">{label}</span>}
+                  </NavLink>
+                </li>
+              ))
+            }
           </ul>
         </nav>
 

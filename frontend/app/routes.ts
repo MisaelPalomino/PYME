@@ -1,7 +1,4 @@
-import { type RouteConfig, index, route } from "@react-router/dev/routes"
+import { type RouteConfig, route } from "@react-router/dev/routes"
+import { navigation } from "./lib/navigation";
 
-export default [
-  index("routes/home.tsx"),
-  route("productos", "routes/productos.tsx"),
-  route("categorias", "routes/categorias.tsx"),
-] satisfies RouteConfig
+export default navigation.map(x => route(x.url, x.path)) satisfies RouteConfig;
