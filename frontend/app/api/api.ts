@@ -9,8 +9,28 @@ const api = axios.create({
   },
 });
 
+export type Producto = {
+  id_producto: number;
+  nombre: string;
+  sku: string;
+  descripcion: string;
+  precio: number;
+  stock_actual: number;
+  stock_minimo: number;
+  stock_maximo: number;
+  id_categoria: number;
+  categoria_nombre?: string;
+  id_proveedor_principal: number;
+  proveedor_nombre?: string;
+}
+
+export type Proveedor = {
+  id_proveedor: number;
+  nombre: string;
+}
+
 export const productosAPI = {
-  getAll: (params: Record<string, any> = {}) => api.get('/core/productos/', { params }),
+  getAll: (params: Record<string, any> = {}) => api.get<Producto[]>('/core/productos/', { params }),
   getOne: (id: number) => api.get(`/core/productos/${id}/`),
   create: (data: any) => api.post('/core/productos/', data),
   update: (id: number, data: any) => api.put(`/core/productos/${id}/`, data),
@@ -33,7 +53,7 @@ export const categoriasAPI = {
 };
 
 export const proveedoresAPI = {
-  getAll: () => api.get('/core/proveedores/'),
+  getAll: () => api.get<Proveedor[]>('/core/proveedores/'),
   getOne: (id: number) => api.get(`/core/proveedores/${id}/`),
   create: (data: any) => api.post('/core/proveedores/', data),
   update: (id: number, data: any) => api.put(`/core/proveedores/${id}/`, data),
