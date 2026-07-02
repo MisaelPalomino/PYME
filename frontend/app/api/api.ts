@@ -19,9 +19,9 @@ export type Producto = {
   stock_minimo: number;
   stock_maximo: number;
   id_categoria: number;
-  categoria_nombre?: string;
+  categoria_nombre: string;
   id_proveedor_principal: number;
-  proveedor_nombre?: string;
+  proveedor_nombre: string;
 }
 
 export type Proveedor = {
