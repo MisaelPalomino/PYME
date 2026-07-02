@@ -1,13 +1,22 @@
-import { useState, useEffect } from 'react';
-import { productosAPI, categoriasAPI, proveedoresAPI, type Categoria, type Producto, type Proveedor } from '~/api/api';
-import { useDebounce } from "use-debounce";
+import { useState } from 'react';
+import { productosAPI, categoriasAPI, proveedoresAPI, type Producto } from '~/api/api';
 import { Button } from '~/components/ui/button';
-import { useAuth } from '~/context/AuthContext';
 import type { Route } from "./+types/productos";
-import { Plus, Search } from 'lucide-react';
 import { Card, CardContent } from '~/components/ui/card';
-import { Input } from '~/components/ui/input';
-import { FilterCard, InputFilter, ComboboxFilter } from '~/components/FilterCard';
+import { FilterCard } from '~/components/FilterCard';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit2, Plus, Trash2 } from 'lucide-react';
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnFiltersState,
+  type HeaderContext,
+  type SortingState
+} from "@tanstack/react-table";
 
 type ProductoFormData = {
   nombre: string;
@@ -20,6 +29,96 @@ type ProductoFormData = {
   id_categoria: string;
   id_proveedor_principal: string;
 }
+
+function createSortableHeader<T>(name: string) {
+  return ({ column }: HeaderContext<Producto, T>) => {
+    const sorted = column.getIsSorted();
+
+    return (
+      <button
+        onClick={column.getToggleSortingHandler()}
+        className={`items-center px-4 py-2 gap-2 ${column.getIsSorted() ? "text-foreground" : "text-muted-foreground"}`}
+      >
+        <div className="flex">
+          {name}
+
+          {!sorted && <ArrowUpDown className="w-4 h-4 text-muted-foreground" />}
+          {sorted === "asc" && <ArrowUp className="w-4 h-4 text-foreground" />}
+          {sorted === "desc" && <ArrowDown className="w-4 h-4 text-foreground" />}
+        </div>
+      </button>
+    );
+  };
+}
+
+const columnHelper = createColumnHelper<Producto>();
+
+const columns = [
+  columnHelper.accessor("nombre", {
+    header: createSortableHeader("Producto / SKU"),
+    enableSorting: true,
+    enableColumnFilter: true,
+    size: NaN,
+    cell: (info) => (
+      <div className="px-4 py-3">
+        <p className="text-foreground">{info.getValue()}</p>
+        <p className="text-xs text-muted-foreground font-mono">{info.row.original.sku}</p>
+      </div>
+    )
+  }),
+  columnHelper.accessor("categoria_nombre", {
+    header: createSortableHeader("Categoría"),
+    enableSorting: true,
+    enableColumnFilter: true,
+    cell: (info) => (
+      <div className="px-4 py-3 text-muted-foreground">{info.getValue()}</div>
+    )
+  }),
+  columnHelper.accessor("stock_actual", {
+    header: createSortableHeader("Stock"),
+    cell: (info) => {
+      const stock = info.getValue();
+      const p = info.row.original;
+
+      return (
+        <div className="px-4 py-3 text-center">
+          <span className={stock === 0 ? 'text-destructive' : stock < p.stock_minimo ? 'text-yellow-600' : 'text-foreground'}>{stock}</span>
+        </div>
+      );
+    }
+  }),
+  columnHelper.display({
+    id: "minmax",
+    header: "Min / Max",
+    cell: (info) => {
+      const p = info.row.original;
+
+      return <div className="px-4 py-3 text-center text-muted-foreground">{p.stock_minimo} / {p.stock_maximo}</div>;
+    }
+  }),
+  columnHelper.accessor("precio", {
+    header: createSortableHeader("Precio"),
+    cell: (info) => <div className="px-4 py-3 text-center text-foreground">S/ {info.getValue()}</div>
+  }),
+  columnHelper.display({
+    id: "actions",
+    header: "Acciones",
+    cell: () => {
+      return (
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-center gap-2">
+            <button className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
+              <Edit2 className="w-3.5 h-3.5" />
+            </button>
+            <button className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+  })
+];
 
 export async function loader() {
   const [
@@ -52,6 +151,29 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     id_proveedor_principal: '',
   });
   const [editId, setEditId] = useState<number | null>(null);
+  const statusConfig = {
+    critical: { label: 'Crítico', variant: 'destructive' as const },
+    warning: { label: 'Aviso', variant: 'secondary' as const },
+    normal: { label: 'Normal', variant: 'outline' as const },
+  };
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const table = useReactTable({
+    data: loaderData.productos,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    state: {
+      sorting,
+      columnFilters,
+    }
+  });
 
   const aplicarFiltros = async () => {
     // setLoading(true);
@@ -129,6 +251,11 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     setEditId(producto.id_producto);
   };
 
+  function handleFilter(values: Record<string, string>) {
+    table.getColumn("nombre")?.setFilterValue(values["search"]);
+    table.getColumn("categoria_nombre")?.setFilterValue(values["categoria"]);
+  }
+
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de eliminar este producto?')) return;
     try {
@@ -138,6 +265,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
       // setError('Error al eliminar el producto');
     }
   };
+
 
   return (
     <div>
@@ -280,120 +408,106 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
         </div>
       </div>
 
-      <FilterCard>
-        <InputFilter placeholder="Buscar por nombre o SKU..."/>
-        <ComboboxFilter placeholder="Categoría" items={loaderData.categorias.map(x => x.nombre)}/>
+      <FilterCard onChange={handleFilter}>
+        <FilterCard.Input name="search" placeholder="Buscar por nombre o SKU..." />
+        <FilterCard.Combobox name="categoria" placeholder="Categoría" items={loaderData.categorias.map(x => x.nombre)} />
       </FilterCard>
 
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm tab">
+              <thead className="border-b border-border bg-muted/30">
+                {table.getHeaderGroups().map(group => (
+                  <tr key={group.id}>
+                    {group.headers.map(header => (
+                      <th key={header.id} className="text-muted-foreground" style={{ width: `${header.getSize()}px` }}>
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">ID</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Nombre</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">SKU</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Categoría</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Stock</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Precio</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {loaderData.productos.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-4 text-center text-gray-500">
-                    No hay productos
-                  </td>
-                </tr>
-              ) : (
-                loaderData.productos.map((p) => (
-                  <tr key={p.id_producto} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm">{p.id_producto}</td>
-                    <td className="px-4 py-3 text-sm font-medium">{p.nombre}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{p.sku}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className="inline-block px-2 py-1 bg-gray-100 rounded text-xs">
-                        {p.categoria_nombre || 'Sin categoría'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${p.stock_actual <= p.stock_minimo ? 'bg-red-100 text-red-700' :
-                        p.stock_actual >= p.stock_maximo ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-green-100 text-green-700'
-                        }`}>
-                        {p.stock_actual}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm">${Number(p.precio).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <button
-                        className="px-2 py-1 text-blue-600 hover:text-blue-800 mr-2"
-                        onClick={() => handleEdit(p)}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        className="px-2 py-1 text-red-600 hover:text-red-800"
-                        onClick={() => handleDelete(p.id_producto)}
-                      >
-                        🗑️
-                      </button>
+              <tbody>
+                {table.getRowCount() > 0 ? (
+                  table.getRowModel().rows.map(row => (
+                    <tr key={row.id}>
+                      {row.getVisibleCells().map(cell => (
+                        <td key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={table.getAllLeafColumns().length}
+                      className="py-8 text-center text-muted-foreground"
+                    >
+                      No se encontraron productos.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                )
+                }
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between px-4 py-3 border-t">
+        <div className="text-sm text-muted-foreground">
+          Página {table.getState().pagination.pageIndex + 1} de{" "}
+          {table.getPageCount()}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.firstPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => table.lastPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
   );
 }
-
-/*
-function asjfoajfodf(props: {categorias: Categoria[]}) {
-  type Filter = { search: string, categoria: string };
-
-  const [filter, setFilter] = useState<Filter>({ search: "", categoria: "" });
-
-  function handleSearch(newFilter: Partial<Filter>) {
-    setFilter({ ...filter, ...newFilter });
-  }
-
-  return (
-    <Card>
-      <CardContent className="pt-4 pb-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Buscar por nombre o SKU..." className="pl-9" value={filter.search} onChange={(e) => handleSearch({ search: e.target.value })} />
-          </div>
-
-          <Select value="Pina" onValueChange={(value) => handleSearch({ categoria: value })}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las categorías</SelectItem>
-              {props.categorias.map(c => <SelectItem key={c.id_categoria} value={c.nombre}>{c.nombre}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value="Hola" >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="critical">Crítico</SelectItem>
-              <SelectItem value="warning">Aviso</SelectItem>
-              <SelectItem value="normal">Normal</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-*/

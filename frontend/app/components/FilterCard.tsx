@@ -1,34 +1,66 @@
 import { Search } from "lucide-react";
-import type React from "react";
 import { Card, CardContent } from "~/components/ui/card";
-import { Input } from "./ui/input";
-import { useState } from "react";
-import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "./ui/combobox";
-
-type FilterCardItems = typeof InputFilter | typeof ComboboxFilter;
+import { Input as UIInput } from "./ui/input";
+import { createContext, useContext, useEffect, useRef, useState, type PropsWithChildren } from "react";
+import {
+  Combobox as UICombobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList
+} from "./ui/combobox";
+import { useDebounce } from "use-debounce";
 
 type FilterCardProps = {
-  children:
-  React.ReactElement<FilterCardItems> |
-  React.ReactElement<FilterCardItems>[]
+  onChange: (values: Record<string, string>) => void
 };
 
-export function FilterCard({ children }: FilterCardProps) {
+const FilterContext = createContext<((name: string, value: string) => void) | null>(null);
+
+function useFilterContext() {
+  const ctx = useContext(FilterContext);
+
+  if (!ctx) {
+    throw new Error("useFilterContext must be used insed <FilterCard>");
+  }
+
+  return ctx;
+}
+
+function Root({ onChange, children } : PropsWithChildren<FilterCardProps>) {
+  const ref = useRef<Record<string, string>>({});
+
+  function setChangeValue(name: string, value: string) {
+    ref.current[name] = value;
+
+    onChange(ref.current);
+  }
+
   return (
-    <Card>
+    <Card className="my-4">
       <CardContent className="pt-4 pb-4">
         <div className="flex flex-col sm:flex-row gap-3">
-          {children}
+          <FilterContext.Provider value={setChangeValue}>
+            {children}
+          </FilterContext.Provider>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-export function InputFilter(props: {
+function Input(props: {
+  name: string,
   placeholder: string
 }) {
   const [value, setValue] = useState<string>("");
+  const [debounceValue] = useDebounce(value, 300);
+  const setChangeValue = useFilterContext();
+
+  useEffect(() => {
+    setChangeValue(props.name, debounceValue);
+  }, [debounceValue]);
 
   function handleChange(newValue: string) {
     setValue(newValue);
@@ -37,28 +69,37 @@ export function InputFilter(props: {
   return (
     <div className="relative flex-1">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-      <Input placeholder={props.placeholder} className="pl-9" value={value} onChange={(e) => handleChange(e.target.value)} />
+      <UIInput placeholder={props.placeholder} className="pl-9" value={value} onChange={(e) => handleChange(e.target.value)} />
     </div>
   );
 }
 
-export function ComboboxFilter(props: {
+function Combobox(props: {
+  name: string,
   placeholder: string,
   items: string[],
 }) {
+  const setChangeValue = useFilterContext();
+
+  function handleChange(value: string | null) {
+    setChangeValue(props.name, value ?? "");  
+  } 
+
   return (
-    <Combobox items={props.items}>
+    <UICombobox items={props.items} onValueChange={handleChange}>
       <ComboboxInput placeholder={props.placeholder} />
       <ComboboxContent>
-        <ComboboxEmpty>Vacío</ComboboxEmpty>
+        <ComboboxEmpty>No encontrado.</ComboboxEmpty>
         <ComboboxList>
           {(item) => (
             <ComboboxItem key={item} value={item}>
-            {item}
+              {item}
             </ComboboxItem>
           )}
         </ComboboxList>
       </ComboboxContent>
-    </Combobox> 
+    </UICombobox>
   );
 }
+
+export const FilterCard = Object.assign(Root, { Combobox, Input });
