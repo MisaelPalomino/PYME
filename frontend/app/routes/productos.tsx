@@ -40,7 +40,7 @@ function createSortableHeader<T>(name: string) {
         onClick={column.getToggleSortingHandler()}
         className={`items-center px-4 py-2 gap-2 ${column.getIsSorted() ? "text-foreground" : "text-muted-foreground"}`}
       >
-        <div className="flex">
+        <div className="flex gap-1">
           {name}
 
           {!sorted && <ArrowUpDown className="w-4 h-4 text-muted-foreground" />}
@@ -59,6 +59,19 @@ const columns = [
     header: createSortableHeader("Producto / SKU"),
     enableSorting: true,
     enableColumnFilter: true,
+
+    filterFn: (row, _, value) => {
+      const texto = value.toLowerCase();
+
+      const nombre = row.original.nombre.toLowerCase();
+      const sku = row.original.sku.toLowerCase();
+
+      return (
+        nombre.includes(texto) ||
+        sku.includes(texto)
+      );
+    },
+
     size: NaN,
     cell: (info) => (
       <div className="px-4 py-3">
@@ -98,7 +111,7 @@ const columns = [
     }
   }),
   columnHelper.accessor("precio", {
-    header: createSortableHeader("Precio"),
+    header: createSortableHeader("Precio Unitario"),
     cell: (info) => <div className="px-4 py-3 text-center text-foreground">S/ {info.getValue()}</div>
   }),
   columnHelper.display({
@@ -465,7 +478,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
         </CardContent>
       </Card>
 
-      <Pagination table={table}/>
+      <Pagination table={table} />
     </div>
   );
 }
