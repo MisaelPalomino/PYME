@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { productosAPI, categoriasAPI, proveedoresAPI, type Producto } from '~/api/api';
 import { Button } from '~/components/ui/button';
+import Pagination from '~/components/Pagination';
 import type { Route } from "./+types/productos";
 import { Card, CardContent } from '~/components/ui/card';
 import { FilterCard } from '~/components/FilterCard';
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Edit2, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, Plus, Trash2 } from 'lucide-react';
 import {
   createColumnHelper,
   flexRender,
@@ -418,7 +419,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm tab">
-              <thead className="border-b border-border bg-muted/30">
+              <thead className="border-b border-border">
                 {table.getHeaderGroups().map(group => (
                   <tr key={group.id}>
                     {group.headers.map(header => (
@@ -464,50 +465,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between px-4 py-3 border-t">
-        <div className="text-sm text-muted-foreground">
-          Página {table.getState().pagination.pageIndex + 1} de{" "}
-          {table.getPageCount()}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => table.firstPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => table.lastPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronsRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <Pagination table={table}/>
     </div>
   );
 }

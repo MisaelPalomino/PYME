@@ -16,7 +16,7 @@ type FilterCardProps = {
   onChange: (values: Record<string, string>) => void
 };
 
-const FilterContext = createContext<((name: string, value: string) => void) | null>(null);
+const FilterContext = createContext<((key: string, value: string) => void) | null>(null);
 
 function useFilterContext() {
   const ctx = useContext(FilterContext);

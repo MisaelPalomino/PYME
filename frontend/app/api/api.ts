@@ -25,8 +25,13 @@ export type Producto = {
 }
 
 export type Proveedor = {
-  id_proveedor: number;
-  nombre: string;
+  id_proveedor: number,
+  nombre: string,
+  contacto: string,
+  correo: string,
+  telefono: string,
+  lead_time_dias: number,
+  activo: boolean,
 }
 
 export const productosAPI = {

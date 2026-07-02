@@ -1,54 +1,53 @@
 import { useState } from 'react';
 import { Plus, Edit2, Trash2, Mail, Phone, Clock, TrendingUp, FileText } from 'lucide-react';
-// import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-// import { Badge } from '../components/ui/badge';
-// import { Button } fr|om '../components/ui/button';
-// import { Input } from '../components/ui/input';
-// import { Label } from '../components/ui/label';
-// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-// import { suppliers as initial, orders, products, Supplier } from '../data/mockData';
-// import { format } from 'date-fns';
-// import { es } from 'date-fns/locale';
 import type { Route } from "./+types/proveedores";
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
-
-type Supplier = {
-  id_proveedor: number,
-  nombre: string,
-  contacto: string,
-  correo: string,
-  telefono: string,
-  lead_time_dias: number,
-  activo: boolean
-}
+import { proveedoresAPI, type Proveedor } from '~/api/api';
+import { FilterCard } from '~/components/FilterCard';
+import { createColumnHelper, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable, type ColumnFiltersState } from '@tanstack/react-table';
+import Pagination from '~/components/Pagination';
 
 // TODO: Change this to database
 // Hace una llamada al Database
-export async function loader({}: Route.LoaderArgs): Promise<Supplier[]> {
-  return [{
-    id_proveedor: 1,
-    activo: true,
-    contacto: "+51987654321",
-    correo: "example@email.com",
-    lead_time_dias: 12,
-    nombre: "Sistemas UNSA",
-    telefono: "?????"
-  }];
+export async function loader({}: Route.LoaderArgs) {
+  const response = await proveedoresAPI.getAll();
+  return {
+    proveedores: response.data
+  };
 }
 
+const columnHelper = createColumnHelper<Proveedor>();
+
+const columns = [
+  columnHelper.accessor("nombre", {
+    enableColumnFilter: true
+  })
+];
+
 export default function Suppliers({loaderData}: Route.ComponentProps) {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(loaderData);
   const [dialogOpen, setDialogOpen] = useState(false);
   // const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Supplier | null>(null);
-  const [form, setForm] = useState<Supplier>();
+  // const [editing, setEditing] = useState<Supplier | null>(null);
+  // const [form, setForm] = useState<Supplier>();
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-  const [emailSupplier, setEmailSupplier] = useState<Supplier | null>(null);
+  const [emailSupplier, setEmailSupplier] = useState<Proveedor | null>(null);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const table = useReactTable({
+    data: loaderData.proveedores,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+
+    onColumnFiltersChange: setColumnFilters,
+    state: {
+      columnFilters
+    }
+  });
 
   function openCreate() {
     /*setEditing(null);
@@ -56,7 +55,7 @@ export default function Suppliers({loaderData}: Route.ComponentProps) {
     setDialogOpen(true);*/
   }
 
-  function openEdit(s: Supplier) {
+  function openEdit(s: Proveedor) {
     /*setEditing(s);
     setForm({ name: s.name, contact: s.contact, email: s.email, phone: s.phone, leadTime: s.leadTime });
     setDialogOpen(true);*/
@@ -71,7 +70,7 @@ export default function Suppliers({loaderData}: Route.ComponentProps) {
     setDialogOpen(false);
   }
 
-  function openEmailTemplate(s: Supplier) {
+  function openEmailTemplate(s: Proveedor) {
     setEmailSupplier(s);
     setEmailDialogOpen(true);
   }
@@ -85,12 +84,16 @@ export default function Suppliers({loaderData}: Route.ComponentProps) {
     return 'text-destructive';
   };
 
+  function handleFilter(values: Record<string, string>) {
+    table.getColumn("nombre")?.setFilterValue(values["search"]);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-foreground">Proveedores</h1>
-          <p className="text-sm text-muted-foreground">{suppliers.length} proveedores registrados</p>
+          <p className="text-sm text-muted-foreground">{loaderData.proveedores.length} proveedores registrados</p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="w-4 h-4 mr-2" />
@@ -98,16 +101,27 @@ export default function Suppliers({loaderData}: Route.ComponentProps) {
         </Button>
       </div>
 
+      <FilterCard onChange={handleFilter}>
+        <FilterCard.Input name="search" placeholder="Buscar por nombre..."/>
+      </FilterCard>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-        {suppliers.map(s => {
-          // const supplierOrders = orders.filter(o => o.supplierId === s.id);
+        {table.getRowCount() == 0 && 
+          <div className="py-8 text-center text-muted-foreground">
+            No se encontraron proveedores. 
+          </div> 
+        }
+  
+        {table.getRowModel().rows.map((row) => {
+          const s = row.original;
+
           return (
             <Card key={s.id_proveedor} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-sm">{s.nombre}</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">{s.contacto}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{s.nombre}</p>
                   </div>
                   <div className="flex gap-1">
                     <button onClick={() => openEmailTemplate(s)} className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground" title="Plantilla de correo">
@@ -172,6 +186,8 @@ export default function Suppliers({loaderData}: Route.ComponentProps) {
           );
         })}
       </div>
+
+      <Pagination table={table}/>
 
       {/* Create/Edit dialog */}
       {
