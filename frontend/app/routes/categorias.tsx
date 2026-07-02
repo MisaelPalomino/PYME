@@ -3,6 +3,8 @@ import { categoriasAPI, type Categoria } from '~/api/api';
 import { Button } from '~/components/ui/button';
 import { useAuth } from '~/context/AuthContext';
 import type { Route } from "./+types/categorias";
+import { Card, CardContent } from '~/components/ui/card';
+import { Edit2, Tag } from 'lucide-react';
 
 
 export async function loader() {
@@ -34,9 +36,9 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
       };
 
       if (editId) {
-        await categoriasAPI.update(editId, data);
+        // await categoriasAPI.update(editId, data);
       } else {
-        await categoriasAPI.create(data);
+        // await categoriasAPI.create(data);
       }
 
       resetForm();
@@ -140,58 +142,25 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">ID</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Nombre</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Descripción</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {loaderData.categorias.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-4 text-center text-gray-500">
-                    No hay categorías
-                  </td>
-                </tr>
-              ) : (
-                loaderData.categorias.map((cat) => (
-                  <tr key={cat.id_categoria} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm">{cat.id_categoria}</td>
-                    <td className="px-4 py-3 text-sm font-medium">{cat.nombre}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {cat.descripcion || <span className="text-gray-400">Sin descripción</span>}
-                    </td>
-                    <td className="px-4 py-3 text-sm">
-                      {isAdmin ? (
-                        <>
-                          <button
-                            className="px-2 py-1 text-blue-600 hover:text-blue-800 mr-2"
-                            onClick={() => handleEdit(cat)}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            className="px-2 py-1 text-red-600 hover:text-red-800"
-                            onClick={() => handleDelete(cat.id_categoria)}
-                          >
-                            🗑️
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-gray-400 text-xs">🔒 Solo admin</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {loaderData.categorias.map(cat => (
+          <Card key={cat.id_categoria} className="hover:shadow-md transition-shadow">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 bg-accent rounded-lg">
+                  <Tag className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => console.log("Implement this!")} className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <h3 className="text-foreground mb-1">{cat.nombre}</h3>
+              <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{cat.descripcion}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
