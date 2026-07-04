@@ -377,25 +377,126 @@ AS $$
 $$;
 
 -- RF24, datos para dashboard
-CREATE OR REPLACE VIEW dashboard_resumen AS
-SELECT
-(
-    SELECT COUNT(*)
-    FROM producto
-    WHERE stock_actual <= stock_minimo
-) AS productos_bajo_stock,
+CREATE OR REPLACE FUNCTION get_dashboard()
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    resultado JSONB;
+BEGIN
+    SELECT jsonb_build_object(
 
-(
-    SELECT COUNT(*)
-    FROM alerta
-    WHERE leida = FALSE
-) AS alertas_pendientes,
+        'resumen', (
+            SELECT jsonb_build_object(
+                'productos_bajo_stock', (SELECT COUNT(*) FROM producto WHERE stock_actual <= stock_minimo),
+                'productos_sin_stock', (SELECT COUNT(*) FROM producto WHERE stock_actual = 0),
+                'total_productos', (SELECT COUNT(*) FROM producto),
 
-(
-    SELECT COUNT(*)
-    FROM pedido
-    WHERE estado = 'pendiente'
-) AS pedidos_pendientes;
+                'alertas_totales', (SELECT COUNT(*) FROM alerta),
+                'alertas_no_leidas', (SELECT COUNT(*) FROM alerta WHERE leida = false),
+
+                'pedidos_pendientes', (SELECT COUNT(*) FROM pedido WHERE estado = 'pendiente'),
+                'pedidos_en_transito', (
+                    SELECT COUNT(*) FROM pedido
+                    WHERE fecha_envio IS NOT NULL AND fecha_recepcion IS NULL
+                ),
+
+                'notificaciones_no_leidas', (SELECT COUNT(*) FROM notificacion WHERE leida = false),
+
+                'ventas_semana', (
+                    SELECT jsonb_build_object(
+                        'unidades', COALESCE(SUM(mi.cantidad), 0),
+                        'monto', COALESCE(SUM(mi.cantidad * p.precio), 0)
+                    )
+                    FROM movimiento_inventario mi
+                    JOIN producto p ON p.id_producto = mi.id_producto
+                    WHERE mi.tipo_movimiento = 'salida'
+                      AND mi.fecha >= NOW() - INTERVAL '7 days'
+                ),
+
+                'ventas_mes', (
+                    SELECT jsonb_build_object(
+                        'unidades', COALESCE(SUM(mi.cantidad), 0),
+                        'monto', COALESCE(SUM(mi.cantidad * p.precio), 0)
+                    )
+                    FROM movimiento_inventario mi
+                    JOIN producto p ON p.id_producto = mi.id_producto
+                    WHERE mi.tipo_movimiento = 'salida'
+                      AND mi.fecha >= NOW() - INTERVAL '30 days'
+                )
+            )
+        ),
+
+        'stock_critico', (
+            SELECT COALESCE(jsonb_agg(row_to_json(sc)), '[]'::jsonb)
+            FROM (
+                SELECT
+                    p.id_producto,
+                    p.sku,
+                    p.nombre,
+                    p.stock_actual,
+                    p.stock_minimo,
+                    p.stock_maximo,
+                    c.nombre AS categoria,
+                    pr.nombre AS proveedor_principal,
+                    pr.lead_time_dias,
+                    CASE
+                        WHEN p.stock_actual = 0 THEN 'sin_stock'
+                        ELSE 'bajo_stock'
+                    END AS estado_stock
+                FROM producto p
+                JOIN categoria c ON c.id_categoria = p.id_categoria
+                JOIN proveedor pr ON pr.id_proveedor = p.id_proveedor_principal
+                WHERE p.stock_actual <= p.stock_minimo
+                ORDER BY (p.stock_actual::numeric / NULLIF(p.stock_minimo, 0)) ASC
+                LIMIT 20
+            ) sc
+        ),
+
+        'alertas_activas', (
+            SELECT COALESCE(jsonb_agg(row_to_json(aa)), '[]'::jsonb)
+            FROM (
+                SELECT
+                    a.id_alerta,
+                    a.tipo_alerta,
+                    a.mensaje,
+                    a.fecha_creacion,
+                    p.id_producto,
+                    p.sku,
+                    p.nombre AS producto_nombre,
+                    p.stock_actual,
+                    p.stock_minimo
+                FROM alerta a
+                JOIN producto p ON p.id_producto = a.id_producto
+                WHERE a.leida = false
+                ORDER BY a.fecha_creacion DESC
+                LIMIT 20
+            ) aa
+        ),
+
+        'ventas_diarias', (
+            SELECT COALESCE(jsonb_agg(row_to_json(vd) ORDER BY vd.dia), '[]'::jsonb)
+            FROM (
+                SELECT
+                    date_trunc('day', mi.fecha) AS dia,
+                    SUM(mi.cantidad) AS unidades,
+                    SUM(mi.cantidad * p.precio) AS monto
+                FROM movimiento_inventario mi
+                JOIN producto p ON p.id_producto = mi.id_producto
+                WHERE mi.tipo_movimiento = 'salida'
+                  AND mi.fecha >= NOW() - INTERVAL '30 days'
+                GROUP BY 1
+            ) vd
+        ),
+
+        'generado_en', NOW()
+
+    ) INTO resultado;
+
+    RETURN resultado;
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION validar_stock()
 RETURNS TRIGGER
