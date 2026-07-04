@@ -4,6 +4,7 @@ import {
   Package,
   Tag,
   Truck,
+  Warehouse,
   type LucideIcon
 } from "lucide-react";
 
@@ -45,5 +46,11 @@ export const navigation: NavigationItem[] = [
     path: "routes/movimientos.tsx",
     label: "Movimientos",
     icon: ArrowLeftRight,
+  },
+  {
+    url: "inventario",
+    path: "routes/inventario.tsx",
+    label: "Inventario",
+    icon: Warehouse,
   }
 ];

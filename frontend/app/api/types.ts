@@ -29,6 +29,7 @@ export type Producto = {
   sku: string;
   descripcion: string;
   precio: number;
+  estado: "normal" | "warning" | "critical";
   stock_actual: number;
   stock_minimo: number;
   stock_maximo: number;

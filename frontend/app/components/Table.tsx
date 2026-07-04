@@ -63,7 +63,7 @@ function FilterCombobox(props: {
 
   return (
     <Combobox items={props.items} onValueChange={handleChange}>
-      <ComboboxInput placeholder={props.placeholder} />
+      <ComboboxInput placeholder={props.placeholder} showClear />
       <ComboboxContent>
         <ComboboxEmpty>No encontrado.</ComboboxEmpty>
         <ComboboxList>
@@ -87,7 +87,7 @@ export function createSortableHeader<TData, TValue>(name: string) {
         onClick={column.getToggleSortingHandler()}
         className={`items-center ${column.getIsSorted() ? "text-foreground" : "text-muted-foreground"}`}
       >
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
           {name}
 
           {!sorted && <ArrowUpDown className="w-4 h-4 text-muted-foreground" />}
@@ -164,7 +164,7 @@ export function TableList<T extends RowData>({ data, columns, filters }: TablePr
                     {table.getHeaderGroups().map(group => (
                       <tr key={group.id}>
                         {group.headers.map(header => (
-                          <th key={header.id} className="text-muted-foreground py-2 px-3" style={{ width: `${header.getSize()}px` }}>
+                          <th key={header.id} className="text-muted-foreground p-2" style={{ width: `${header.getSize()}px` }}>
                             {flexRender(
                               header.column.columnDef.header,
                               header.getContext()
