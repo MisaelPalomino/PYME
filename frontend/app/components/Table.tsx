@@ -190,3 +190,25 @@ export function TableList<T extends RowData>({ data, columns, filters }: TablePr
     </TableWireframe>
   )
 }
+
+export function TableCard<T extends RowData>({ data, columns, filters, children }: TableProps<T> & { children: (item: T) => React.ReactNode }) {
+  return (
+    <TableWireframe columns={columns} data={data} filters={filters}>
+      {
+        (table) => (
+          <>
+            {table.getRowCount() == 0 &&
+              <div className="py-8 text-center text-muted-foreground">
+                No se encontraron elementos.
+              </div>
+            }
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              {table.getRowModel().rows.map(row => children(row.original))}
+            </div>
+          </>
+        )
+      }
+    </TableWireframe>
+  );
+}

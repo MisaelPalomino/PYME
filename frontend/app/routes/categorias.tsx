@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { categoriasAPI, type Categoria } from '~/api/api';
+import { useState } from 'react';
+import { categoriasAPI } from '~/api/api';
+import type { Categoria } from '~/api/types';
 import { Button } from '~/components/ui/button';
 import { useAuth } from '~/context/AuthContext';
 import type { Route } from "./+types/categorias";
 import { Card, CardContent } from '~/components/ui/card';
 import { Edit2, Tag } from 'lucide-react';
-import { createColumnHelper, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable, type ColumnFiltersState } from '@tanstack/react-table';
-import { FilterCard } from '~/components/FilterCard';
-import Pagination from '~/components/Pagination';
+import { createColumnHelper } from '@tanstack/react-table';
+import { TableCard, type Filter } from '~/components/Table';
 
 
 export async function loader() {
@@ -25,6 +25,14 @@ const columns = [
   })
 ];
 
+const filters: Filter[] = [
+  {
+    type: "input",
+    columnName: "nombre",
+    placeholder: "Buscar por nombre"
+  }
+];
+
 export default function Categorias({ loaderData }: Route.ComponentProps) {
   const { user } = useAuth();
   const [error, setError] = useState('');
@@ -32,20 +40,6 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
   const [formData, setFormData] = useState({ nombre: '', descripcion: '' });
 
   const isAdmin = user?.rol?.toLowerCase() === 'administrador';
-
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const table = useReactTable({
-    data: loaderData.categorias,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-
-    onColumnFiltersChange: setColumnFilters,
-    state: {
-      columnFilters
-    }
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,10 +101,6 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
     }
   };
 
-  function handleFilter(values: Record<string, string>) {
-    table.getColumn("nombre")?.setFilterValue(values["search"]);
-  }
-
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">📂 Gestión de Categorías</h2>
@@ -171,43 +161,28 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
         </div>
       )}
 
-      <FilterCard onChange={handleFilter}>
-        <FilterCard.Input name="search" placeholder="Buscar por nombre" />
-      </FilterCard>
 
-      {table.getRowCount() == 0 &&
-        <div className="py-8 text-center text-muted-foreground">
-          No se encontraron proveedores.
-        </div>
-      }
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {table.getRowModel().rows.map(row => {
-          const cat = row.original;
-
-          return (
-            <Card key={cat.id_categoria} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-5 pb-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="p-2 bg-accent rounded-lg">
-                    <Tag className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => console.log("Implement this!")} className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+      <TableCard columns={columns} data={loaderData.categorias} filters={filters}>
+        {(item) => (
+          <Card key={item.id_categoria} className="hover:shadow-md transition-shadow">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="p-2 bg-accent rounded-lg">
+                  <Tag className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <h3 className="text-foreground mb-1">{cat.nombre}</h3>
-                <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{cat.descripcion}</p>
-              </CardContent>
-            </Card>
-          );
+                <div className="flex gap-1">
+                  <button onClick={() => console.log("Implement this!")} className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <h3 className="text-foreground mb-1">{item.nombre}</h3>
+              <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{item.descripcion}</p>
+            </CardContent>
+          </Card>
+        )
         }
-        )}
-      </div>
-
-      <Pagination table={table} />
+      </TableCard>
     </div>
   );
 }

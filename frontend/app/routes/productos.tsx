@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { productosAPI, categoriasAPI, proveedoresAPI, type Producto } from '~/api/api';
+import { productosAPI, categoriasAPI, proveedoresAPI } from '~/api/api';
+import type { Producto } from '~/api/types';
 import { Button } from '~/components/ui/button';
-import Pagination from '~/components/Pagination';
 import type { Route } from "./+types/productos";
-import { Card, CardContent } from '~/components/ui/card';
-import { FilterCard } from '~/components/FilterCard';
 import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, Plus, Trash2 } from 'lucide-react';
 import {
   createColumnHelper,
@@ -18,6 +16,7 @@ import {
   type HeaderContext,
   type SortingState
 } from "@tanstack/react-table";
+import { TableList, type Filter } from '~/components/Table';
 
 type ProductoFormData = {
   nombre: string;
@@ -38,7 +37,7 @@ function createSortableHeader<T>(name: string) {
     return (
       <button
         onClick={column.getToggleSortingHandler()}
-        className={`items-center px-4 py-2 gap-2 ${column.getIsSorted() ? "text-foreground" : "text-muted-foreground"}`}
+        className={`items-center px-4 py-2 ${column.getIsSorted() ? "text-foreground" : "text-muted-foreground"}`}
       >
         <div className="flex gap-1">
           {name}
@@ -92,14 +91,24 @@ const columns = [
     header: createSortableHeader("Stock"),
     cell: (info) => {
       const stock = info.getValue();
-      const p = info.row.original;
+      const { stock_actual, stock_maximo, stock_minimo } = info.row.original;
+
+      const p = Math.min(Math.max((stock_actual - stock_minimo) / (stock_maximo - stock_minimo), 0.0), 1.0);
+
+      let color = "text-foreground";
+
+      if (p <= 0.20) {
+        color = "text-destructive"; // rojo
+      } else if (p <= 0.40) {
+        color = "text-yellow-600"; // amarillo
+      }
 
       return (
         <div className="px-4 py-3 text-center">
-          <span className={stock === 0 ? 'text-destructive' : stock < p.stock_minimo ? 'text-yellow-600' : 'text-foreground'}>{stock}</span>
+          <span className={color}>{stock}</span>
         </div>
       );
-    }
+    },
   }),
   columnHelper.display({
     id: "minmax",
@@ -111,7 +120,7 @@ const columns = [
     }
   }),
   columnHelper.accessor("precio", {
-    header: createSortableHeader("Precio Unitario"),
+    header: createSortableHeader("Precio"),
     cell: (info) => <div className="px-4 py-3 text-center text-foreground">S/ {info.getValue()}</div>
   }),
   columnHelper.display({
@@ -171,23 +180,6 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     normal: { label: 'Normal', variant: 'outline' as const },
   };
 
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const table = useReactTable({
-    data: loaderData.productos,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    state: {
-      sorting,
-      columnFilters,
-    }
-  });
 
   const aplicarFiltros = async () => {
     // setLoading(true);
@@ -265,11 +257,6 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     setEditId(producto.id_producto);
   };
 
-  function handleFilter(values: Record<string, string>) {
-    table.getColumn("nombre")?.setFilterValue(values["search"]);
-    table.getColumn("categoria_nombre")?.setFilterValue(values["categoria"]);
-  }
-
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de eliminar este producto?')) return;
     try {
@@ -280,6 +267,19 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     }
   };
 
+  const filters: Filter[] = [
+    {
+      type: "input",
+      columnName: "nombre",
+      placeholder: "Buscar por nombre o SKU..."
+    },
+    {
+      type: "combobox",
+      columnName: "categoria_nombre",
+      placeholder: "Categoría",
+      items: loaderData.categorias.map(x => x.nombre)
+    }
+  ];
 
   return (
     <div>
@@ -422,63 +422,8 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
         </div>
       </div>
 
-      <FilterCard onChange={handleFilter}>
-        <FilterCard.Input name="search" placeholder="Buscar por nombre o SKU..." />
-        <FilterCard.Combobox name="categoria" placeholder="Categoría" items={loaderData.categorias.map(x => x.nombre)} />
-      </FilterCard>
-
       {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm tab">
-              <thead className="border-b border-border">
-                {table.getHeaderGroups().map(group => (
-                  <tr key={group.id}>
-                    {group.headers.map(header => (
-                      <th key={header.id} className="text-muted-foreground" style={{ width: `${header.getSize()}px` }}>
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-
-              <tbody>
-                {table.getRowCount() > 0 ? (
-                  table.getRowModel().rows.map(row => (
-                    <tr key={row.id}>
-                      {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={table.getAllLeafColumns().length}
-                      className="py-8 text-center text-muted-foreground"
-                    >
-                      No se encontraron productos.
-                    </td>
-                  </tr>
-                )
-                }
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Pagination table={table} />
+      <TableList data={loaderData.productos} columns={columns} filters={filters}/>
     </div>
   );
 }
