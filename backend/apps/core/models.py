@@ -1,12 +1,13 @@
-from django.db import models
+from django.db import models, connection
+
 
 class Categoria(models.Model):
-    id_categoria = models.BigAutoField(primary_key=True)  
+    id_categoria = models.BigAutoField(primary_key=True)
     nombre = models.CharField(max_length=255)
-    descripcion = models.TextField()  
+    descripcion = models.TextField()
 
     class Meta:
-        db_table = 'categoria' 
+        db_table = "categoria"
 
     def __str__(self):
         return self.nombre
@@ -22,7 +23,16 @@ class Proveedor(models.Model):
     activo = models.BooleanField(default=True)
 
     class Meta:
-        db_table = 'proveedor'
+        db_table = "proveedor"
+
+    @property
+    def porcentaje_cumplimiento(self):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT porcentaje_cumplimiento_proveedor(%s)",
+                [self.id_proveedor],
+            )
+            return cursor.fetchone()[0]
 
     def __str__(self):
         return self.nombre
@@ -32,16 +42,21 @@ class Producto(models.Model):
     id_producto = models.BigAutoField(primary_key=True)
     nombre = models.CharField(max_length=255)
     sku = models.CharField(max_length=255, unique=True)
-    descripcion = models.TextField() 
+    descripcion = models.TextField()
     stock_actual = models.BigIntegerField()
     stock_minimo = models.BigIntegerField()
     stock_maximo = models.BigIntegerField()
-    precio = models.DecimalField(max_digits=10, decimal_places=2)  
-    id_categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, db_column='id_categoria')
-    id_proveedor_principal = models.ForeignKey(Proveedor, on_delete=models.PROTECT, db_column='id_proveedor_principal')
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    id_categoria = models.ForeignKey(
+        Categoria, on_delete=models.PROTECT, db_column="id_categoria"
+    )
+    id_proveedor_principal = models.ForeignKey(
+        Proveedor, on_delete=models.PROTECT, db_column="id_proveedor_principal"
+    )
 
     class Meta:
-        db_table = 'producto'
+        db_table = "producto"
 
     def __str__(self):
         return f"{self.nombre} ({self.sku})"
+
