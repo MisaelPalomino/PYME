@@ -1,5 +1,5 @@
-import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type RowData, type SortingState, type Table } from "@tanstack/react-table";
-import { Search } from "lucide-react";
+import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type ColumnFiltersState, type HeaderContext, type RowData, type SortingState, type Table } from "@tanstack/react-table";
+import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
@@ -78,6 +78,27 @@ function FilterCombobox(props: {
   );
 }
 
+export function createSortableHeader<TData, TValue>(name: string) {
+  return ({ column }: HeaderContext<TData, TValue>) => {
+    const sorted = column.getIsSorted();
+
+    return (
+      <button
+        onClick={column.getToggleSortingHandler()}
+        className={`items-center ${column.getIsSorted() ? "text-foreground" : "text-muted-foreground"}`}
+      >
+        <div className="flex gap-1">
+          {name}
+
+          {!sorted && <ArrowUpDown className="w-4 h-4 text-muted-foreground" />}
+          {sorted === "asc" && <ArrowUp className="w-4 h-4 text-foreground" />}
+          {sorted === "desc" && <ArrowDown className="w-4 h-4 text-foreground" />}
+        </div>
+      </button>
+    );
+  };
+}
+
 export function TableWireframe<T extends RowData>({ data, columns, filters, children }: TableProps<T> & { children?: (table: Table<T>) => React.ReactNode }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -135,15 +156,15 @@ export function TableList<T extends RowData>({ data, columns, filters }: TablePr
     <TableWireframe columns={columns} data={data} filters={filters}>
       {
         (table) => (
-          <Card>
+          <Card className="p-0">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm tab">
-                  <thead className="border-b border-border">
+                <table className="w-full text-sm">
+                  <thead className="border-b">
                     {table.getHeaderGroups().map(group => (
                       <tr key={group.id}>
                         {group.headers.map(header => (
-                          <th key={header.id} className="text-muted-foreground" style={{ width: `${header.getSize()}px` }}>
+                          <th key={header.id} className="text-muted-foreground py-2 px-3" style={{ width: `${header.getSize()}px` }}>
                             {flexRender(
                               header.column.columnDef.header,
                               header.getContext()

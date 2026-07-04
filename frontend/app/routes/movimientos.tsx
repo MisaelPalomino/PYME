@@ -1,22 +1,20 @@
 import { useState } from 'react';
-import { Plus, Search, ArrowUp, ArrowDown } from 'lucide-react';
-import { Card, CardContent } from '../components/ui/card';
+import { Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import type { Movimiento } from '~/api/types';
 import { mockMovimientos } from '~/dataMock'; // FIXME: Delete this
 import { createColumnHelper } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { TableList, type Filter } from '~/components/Table';
+import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 
 const columnHelper = createColumnHelper<Movimiento>();
 
 const columns = [
   columnHelper.accessor("producto_nombre", {
-    header: "Producto",
+    header: createSortableHeader("Producto"),
+    size: NaN,
     cell: (info) => (
       // <p className="text-xs text-muted-foreground font-mono">{m.sku}</p>
       <p className="px-4 py-3 text-foreground">{info.getValue()}</p>
@@ -40,7 +38,7 @@ const columns = [
     }
   }),
   columnHelper.accessor("cantidad", {
-    header: "Cantidad",
+    header: createSortableHeader("Cantidad"),
     cell: (info) => {
       const m = info.row.original;
       return (
@@ -53,7 +51,7 @@ const columns = [
     }
   }),
   columnHelper.accessor("fecha", {
-    header: "Fecha",
+    header: createSortableHeader("Fecha"),
     cell: (info) => (
       <div className="px-4 py-3 text-muted-foreground whitespace-nowrap">
         {format(info.getValue(), 'dd/MM/yyyy HH:mm', { locale: es })}
@@ -62,8 +60,9 @@ const columns = [
   }),
   columnHelper.display({
     header: "Observaciones",
+    size: NaN,
     cell: (info) => (
-      <div className="px-4 py-3 text-muted-foreground max-w-[160px] truncate">{info.row.original.observaciones}</div>
+      <div className="px-4 py-3 text-muted-foreground">{info.row.original.observaciones}</div>
     )
   })
 ];
@@ -83,8 +82,6 @@ const filters: Filter[] = [
 ];
 
 export default function Movements() {
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({
     productId: '', type: 'entrada' as 'entrada' | 'salida',

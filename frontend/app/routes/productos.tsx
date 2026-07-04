@@ -3,20 +3,9 @@ import { productosAPI, categoriasAPI, proveedoresAPI } from '~/api/api';
 import type { Producto } from '~/api/types';
 import { Button } from '~/components/ui/button';
 import type { Route } from "./+types/productos";
-import { ArrowDown, ArrowUp, ArrowUpDown, Edit2, Plus, Trash2 } from 'lucide-react';
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnFiltersState,
-  type HeaderContext,
-  type SortingState
-} from "@tanstack/react-table";
-import { TableList, type Filter } from '~/components/Table';
+import { Edit2, Plus, Trash2 } from 'lucide-react';
+import { createColumnHelper } from "@tanstack/react-table";
+import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 
 type ProductoFormData = {
   nombre: string;
@@ -30,26 +19,6 @@ type ProductoFormData = {
   id_proveedor_principal: string;
 }
 
-function createSortableHeader<T>(name: string) {
-  return ({ column }: HeaderContext<Producto, T>) => {
-    const sorted = column.getIsSorted();
-
-    return (
-      <button
-        onClick={column.getToggleSortingHandler()}
-        className={`items-center px-4 py-2 ${column.getIsSorted() ? "text-foreground" : "text-muted-foreground"}`}
-      >
-        <div className="flex gap-1">
-          {name}
-
-          {!sorted && <ArrowUpDown className="w-4 h-4 text-muted-foreground" />}
-          {sorted === "asc" && <ArrowUp className="w-4 h-4 text-foreground" />}
-          {sorted === "desc" && <ArrowDown className="w-4 h-4 text-foreground" />}
-        </div>
-      </button>
-    );
-  };
-}
 
 const columnHelper = createColumnHelper<Producto>();
 
