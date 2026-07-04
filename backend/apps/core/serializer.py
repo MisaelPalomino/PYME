@@ -4,12 +4,17 @@ from .models import Categoria, Proveedor, Producto
 
 
 class CategoriaSerializer(serializers.ModelSerializer):
+    numero_productos = serializers.IntegerField(
+        source='productos_count',
+        read_only=True
+    )
     class Meta:
         model = Categoria
         fields = (
             "id_categoria",
             "nombre",
             "descripcion",
+            "numero_productos"
         )
         read_only_fields = ("id_categoria",)
 

@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 
 from .models import Categoria, Producto, Proveedor
@@ -7,11 +8,20 @@ from .models import Categoria, Producto, Proveedor
 class CategoriaService:
     @staticmethod
     def listar():
-        return Categoria.objects.all()
+        """Lista categorías con el conteo de productos."""
+        return Categoria.objects.annotate(
+            productos_count=Count('producto')
+        )
 
     @staticmethod
     def obtener(id_categoria):
-        return get_object_or_404(Categoria, pk=id_categoria)
+        """Obtiene una categoría con el conteo de productos."""
+        return get_object_or_404(
+            Categoria.objects.annotate(
+                productos_count=Count('producto')
+            ),
+            pk=id_categoria
+        )
 
     @staticmethod
     @transaction.atomic
