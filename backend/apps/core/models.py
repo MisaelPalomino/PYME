@@ -1,4 +1,5 @@
 from django.db import models, connection
+import json
 
 
 class Categoria(models.Model):
@@ -34,6 +35,15 @@ class Proveedor(models.Model):
             )
             return cursor.fetchone()[0]
 
+    @property
+    def categorias(self):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT categorias_proveedor(%s)",
+                [self.id_proveedor],
+            )
+            return json.loads(cursor.fetchone()[0])
+
     def __str__(self):
         return self.nombre
 
@@ -59,4 +69,3 @@ class Producto(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.sku})"
-

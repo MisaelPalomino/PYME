@@ -18,14 +18,19 @@ class ProveedorSerializer(serializers.ModelSerializer):
             "lead_time_dias",
             "activo",
             "porcentaje_cumplimiento",
+            "categorias",
         ]
         read_only_fields = [
             "id_proveedor",
             "porcentaje_cumplimiento",
+            "categorias",
         ]
 
     def get_porcentaje_cumplimiento(self, obj):
         return obj.porcentaje_cumplimiento
+
+    def get_categorias(self, obj):
+        return obj.categorias
 
     def validate_lead_time_dias(self, value):
         if value < 0:

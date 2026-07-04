@@ -65,4 +65,3 @@ class ProveedorViewSet(viewsets.ViewSet):
         ProveedorService.eliminar(pk)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
-

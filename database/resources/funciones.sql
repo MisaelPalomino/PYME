@@ -349,6 +349,33 @@ WHERE pe.id_proveedor = p_id_proveedor
 AND pe.estado = 'recibido';
 $$;
 
+CREATE OR REPLACE FUNCTION categorias_proveedor(
+    p_id_proveedor INTEGER
+)
+RETURNS JSONB
+LANGUAGE sql
+AS $$
+    SELECT COALESCE(
+        jsonb_agg(
+            jsonb_build_object(
+                'id_categoria', t.id_categoria,
+                'nombre', t.nombre
+            )
+            ORDER BY t.nombre
+        ),
+        '[]'::jsonb
+    )
+    FROM (
+        SELECT DISTINCT
+            c.id_categoria,
+            c.nombre
+        FROM producto p
+        INNER JOIN categoria c
+            ON c.id_categoria = p.id_categoria
+        WHERE p.id_proveedor_principal = p_id_proveedor
+    ) AS t;
+$$;
+
 -- RF24, datos para dashboard
 CREATE OR REPLACE VIEW dashboard_resumen AS
 SELECT
