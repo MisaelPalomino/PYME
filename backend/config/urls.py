@@ -9,5 +9,5 @@ urlpatterns = [
     path("api/pedidos/", include("apps.pedidos.urls")),
     path("api/ia/", include("apps.ia.urls")),
     path("api/proveedores/", include("apps.proveedores.urls")),
+    path("api/dashboard/", include("apps.dashboard.urls")),
 ]
-
