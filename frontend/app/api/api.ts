@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { Proveedor, Categoria, Producto } from '~/api/types';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -9,21 +10,6 @@ const api = axios.create({
   },
 });
 
-export type Producto = {
-  id_producto: number;
-  nombre: string;
-  sku: string;
-  descripcion: string;
-  precio: number;
-  stock_actual: number;
-  stock_minimo: number;
-  stock_maximo: number;
-  id_categoria: number;
-  categoria_nombre: string;
-  id_proveedor_principal: number;
-  proveedor_nombre: string;
-}
-
 export const productosAPI = {
   getAll: (params: Record<string, any> = {}) => api.get<Producto[]>('/core/productos/', { params }),
   getOne: (id: number) => api.get(`/core/productos/${id}/`),
@@ -31,12 +17,6 @@ export const productosAPI = {
   update: (id: number, data: any) => api.put(`/core/productos/${id}/`, data),
   delete: (id: number) => api.delete(`/core/productos/${id}/`),
 };
-
-export type Categoria = {
-  id_categoria: number;
-  nombre: string;
-  descripcion: string;
-}
 
 // FIXME: Maybe the types are wrong
 export const categoriasAPI = {
@@ -47,16 +27,6 @@ export const categoriasAPI = {
   delete: (id: number) => api.delete(`/core/categorias/${id}/`),
 };
 
-export type Proveedor = {
-  id_proveedor: number,
-  nombre: string,
-  contacto: string,
-  correo: string,
-  telefono: string,
-  lead_time_dias: number,
-  activo: boolean,
-}
-
 export const proveedoresAPI = {
   getAll: () => api.get<Proveedor[]>('/core/proveedores/'),
   getOne: (id: number) => api.get(`/core/proveedores/${id}/`),
@@ -64,22 +34,3 @@ export const proveedoresAPI = {
   update: (id: number, data: any) => api.put(`/core/proveedores/${id}/`, data),
   delete: (id: number) => api.delete(`/core/proveedores/${id}/`),
 };
-
-
-/*
-
-        migrations.CreateModel(
-            name='MovimientoInventario',
-            fields=[
-                ('id_movimiento', models.BigAutoField(primary_key=True, serialize=False)),
-                ('tipo_movimiento', models.CharField(choices=[('entrada', 'Entrada'), ('salida', 'Salida')], max_length=255)),
-                ('fecha', models.DateTimeField()),
-                ('cantidad', models.BigIntegerField()),
-                ('observaciones', models.TextField()),
-                ('id_producto', models.ForeignKey(db_column='id_producto', on_delete=django.db.models.deletion.PROTECT, to='core.producto')),
-                ('id_usuario', models.ForeignKey(db_column='id_usuario', on_delete=django.db.models.deletion.PROTECT, to=settings.AUTH_USER_MODEL)),
-            ],
-
-*/
-
-export default api;
