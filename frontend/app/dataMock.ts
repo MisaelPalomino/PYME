@@ -1,0 +1,86 @@
+// Archivo para pruebas de UI 
+
+import type { Movimiento } from "./api/types";
+
+export const mockMovimientos: Movimiento[] = [
+  {
+    id: 0,
+    producto_nombre: "iPhone 15 Pro",
+    tipo_movimiento: "Entrada",
+    fecha: new Date("2026-07-01T09:30:00"),
+    cantidad: 50,
+    observaciones: "Ingreso por compra a proveedor",
+  },
+  {
+    id: 1,
+    producto_nombre: "Samsung Galaxy S25",
+    tipo_movimiento: "Salida",
+    fecha: new Date("2026-07-01T11:15:00"),
+    cantidad: 3,
+    observaciones: "Venta en tienda",
+  },
+  {
+    id: 2,
+    producto_nombre: "Xiaomi 15",
+    tipo_movimiento: "Entrada",
+    fecha: new Date("2026-07-02T08:45:00"),
+    cantidad: 25,
+    observaciones: "Reposición de stock",
+  },
+  {
+    id: 3,
+    producto_nombre: "Motorola Edge 60",
+    tipo_movimiento: "Salida",
+    fecha: new Date("2026-07-02T14:20:00"),
+    cantidad: 5,
+    observaciones: "Pedido mayorista",
+  },
+  {
+    id: 4,
+    producto_nombre: "Google Pixel 10",
+    tipo_movimiento: "Salida",
+    fecha: new Date("2026-07-03T10:00:00"),
+    cantidad: 2,
+    observaciones: "Venta online",
+  },
+  {
+    id: 5,
+    producto_nombre: "iPhone 15 Pro",
+    tipo_movimiento: "Salida",
+    fecha: new Date("2026-07-03T16:10:00"),
+    cantidad: 1,
+    observaciones: "Cambio por garantía",
+  },
+  {
+    id: 6,
+    producto_nombre: "Samsung Galaxy S25",
+    tipo_movimiento: "Entrada",
+    fecha: new Date("2026-07-04T09:00:00"),
+    cantidad: 40,
+    observaciones: "Recepción de mercadería",
+  },
+  {
+    id: 7,
+    producto_nombre: "Xiaomi 15",
+    tipo_movimiento: "Salida",
+    fecha: new Date("2026-07-04T17:30:00"),
+    cantidad: 6,
+    observaciones: "Venta presencial",
+  },
+  {
+    id: 8,
+    producto_nombre: "Motorola Edge 60",
+    tipo_movimiento: "Entrada",
+    fecha: new Date("2026-07-05T13:15:00"),
+    cantidad: 15,
+    observaciones: "Transferencia desde almacén central",
+  },
+  {
+    id: 9,
+    producto_nombre: "Google Pixel 10",
+    tipo_movimiento: "Entrada",
+    fecha: new Date("2026-07-05T18:00:00"),
+    cantidad: 20,
+    observaciones: "Compra a distribuidor",
+  },
+];
