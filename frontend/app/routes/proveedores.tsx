@@ -13,8 +13,10 @@ import type { Proveedor } from '~/api/types';
 import { ProveedorSchema } from '~/lib/schemas/proveedor.schema';
 import { createColumnHelper } from '@tanstack/react-table';
 import { TableCard, type Filter } from '~/components/Table';
+import { Badge } from '~/components/ui/badge';
+import { toast } from 'sonner';
 
-export async function loader({}: Route.LoaderArgs) {
+export async function loader({ }: Route.LoaderArgs) {
   const response = await proveedoresAPI.getAll();
   return {
     proveedores: response.data
@@ -41,7 +43,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  
+
   const [formData, setFormData] = useState({
     nombre: '',
     contacto: '',
@@ -105,6 +107,12 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
   const errors = fetcher.data && (fetcher.data as any).errors;
   const generalError = fetcher.data && (fetcher.data as any).error;
 
+  function getComplianceColor(rate: number) {
+    if (rate >= 90) return 'text-green-600';
+    if (rate >= 80) return 'text-yellow-600';
+    return 'text-destructive';
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -131,7 +139,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-sm font-semibold">{item.nombre}</CardTitle>
-                  <p className="text-xs text-muted-foreground mt-0.5">Contacto: {item.contacto}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{item.contacto}</p>
                 </div>
                 <div className="flex gap-1">
                   <button
@@ -168,6 +176,28 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Clock className="w-3 h-3" /> Lead time: {item.lead_time_dias} días
+                </div>
+
+                <div className="pt-2 border-t border-border">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-muted-foreground">Cumplimiento</span>
+                    <span className={`text-xs ${getComplianceColor(item.porcentaje_cumplimiento)}`}>{item.porcentaje_cumplimiento}%</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${item.porcentaje_cumplimiento >= 90 ? 'bg-green-500' : item.porcentaje_cumplimiento >= 80 ? 'bg-yellow-500' : 'bg-destructive'}`}
+                      style={{ width: `${item.porcentaje_cumplimiento}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {item.categorias.map(c => (
+                    <Badge key={c.id_categoria} variant="outline" className="text-xs">{c.nombre}</Badge>
+                  ))}
+                  {item.categorias.length > 3 && (
+                    <Badge variant="outline" className="text-xs">+{item.categorias.length - 3} más</Badge>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -287,7 +317,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
           <p className="text-xs text-muted-foreground">¡Copia este texto y envíalo!</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cerrar</Button>
-            <Button onClick={() => { navigator.clipboard.writeText(`Estimado/a ${emailSupplier?.contacto || emailSupplier?.nombre},\n\nPor medio del presente, nos dirigimos a usted para solicitar la reposición de stock para los productos que manejamos con su empresa.\n\nAgradecemos su pronta atención y confirmación de disponibilidad.\n\nAtentamente,\nEquipo de Compras — StockMaster Pro`); setEmailDialogOpen(false); }}>
+            <Button onClick={() => { navigator.clipboard.writeText(`Estimado/a ${emailSupplier?.contacto || emailSupplier?.nombre},\n\nPor medio del presente, nos dirigimos a usted para solicitar la reposición de stock para los productos que manejamos con su empresa.\n\nAgradecemos su pronta atención y confirmación de disponibilidad.\n\nAtentamente,\nEquipo de Compras — StockMaster Pro`); setEmailDialogOpen(false); toast.success("¡Email copiado!") }}>
               Copiar plantilla
             </Button>
           </DialogFooter>
@@ -318,7 +348,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Validamos con el esquema de Zod
   const result = ProveedorSchema.safeParse(submission);
-  
+
   if (!result.success) {
     return { errors: result.error.flatten().fieldErrors };
   }
