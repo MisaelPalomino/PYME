@@ -33,3 +33,12 @@ class MovimientoListCreateView(APIView):
             MovimientoSerializer(movimiento).data,
             status=status.HTTP_201_CREATED,
         )
+
+class HistorialProductoView(APIView):
+    """GET /api/movimientos/producto/<id_producto>/ -> historial de un producto (RF05)."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id_producto):
+        movimientos = MovimientoService.historial_producto(id_producto)
+        serializer = MovimientoSerializer(movimientos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

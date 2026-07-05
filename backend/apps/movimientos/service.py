@@ -49,3 +49,12 @@ class MovimientoService:
             id_usuario_id=id_usuario,
         )
         return movimiento
+
+    @staticmethod
+    def historial_producto(id_producto):
+        return (
+            Movimiento.objects
+            .select_related('id_producto', 'id_usuario')
+            .filter(id_producto_id=id_producto)
+        )
+
