@@ -443,7 +443,7 @@ BEGIN
                     pr.lead_time_dias,
                     CASE
                         WHEN p.stock_actual = 0 THEN 'sin_stock'
-                        ELSE 'bajo_stock'
+                        ELSE 'stock_bajo'
                     END AS estado_stock
                 FROM producto p
                 JOIN categoria c ON c.id_categoria = p.id_categoria
@@ -540,7 +540,7 @@ BEGIN
             NOW(),
             FALSE,
             NEW.id_producto,
-            'BajoStock'
+            'stock_bajo'
         );
 
     END IF;
