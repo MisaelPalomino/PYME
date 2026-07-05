@@ -35,6 +35,7 @@ import {
   AlertDescription,
   AlertTitle,
 } from "~/components/ui/alert";
+import { Toaster } from "./components/ui/sonner";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -80,6 +81,7 @@ function AppLayout() {
             <Outlet />
           </div>
         </main>
+        <Toaster />
       </div>
     </div>
   );
