@@ -7,7 +7,7 @@ from .service import InventarioService
 
 
 class StockInventarioView(APIView):
- #   permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         categoria = request.query_params.get("categoria")
