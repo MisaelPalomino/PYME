@@ -4,7 +4,7 @@ import type { Route } from "./+types/home";
 import { es } from "date-fns/locale";
 import { format } from "date-fns";
 import { Button } from "~/components/ui/button";
-import { AlertCircle, AlertTriangle, ArrowRight, Boxes, ChevronDown, ChevronUp, CircleX, Clock, Download, Package, PackageX, RefreshCw, ShoppingCart, TrendingUp, Truck } from "lucide-react";
+import { AlertCircle, Boxes, CircleX, Clock, Download, Package, RefreshCw, ShoppingCart, TrendingUp, Truck } from "lucide-react";
 import { to_money } from "~/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
