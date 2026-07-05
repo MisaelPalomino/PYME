@@ -22,8 +22,8 @@ export const productosAPI = {
 export const categoriasAPI = {
   getAll: () => api.get<Categoria[]>('/core/categorias/'),
   getOne: (id: number) => api.get<Categoria>(`/core/categorias/${id}/`),
-  create: (data: Categoria) => api.post('/core/categorias/', data),
-  update: (id: number, data: Categoria) => api.put(`/core/categorias/${id}/`, data),
+  create: (data: Omit<Categoria, 'id_categoria'>) => api.post('/core/categorias/', data),
+  update: (id: number, data: Omit<Categoria, 'id_categoria'>) => api.put(`/core/categorias/${id}/`, data),
   delete: (id: number) => api.delete(`/core/categorias/${id}/`),
 };
 

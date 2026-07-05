@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { ProductoSchema } from '~/lib/schemas/producto.schema';
+import type { ActionFunctionArgs } from "react-router";
+import { useFetcher } from "react-router";
 import { productosAPI, categoriasAPI, proveedoresAPI } from '~/api/api';
 import type { Producto } from '~/api/types';
 import { Button } from '~/components/ui/button';
@@ -6,6 +9,9 @@ import type { Route } from "./+types/productos";
 import { Edit2, Plus, Trash2 } from 'lucide-react';
 import { createColumnHelper } from "@tanstack/react-table";
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
+import { Label } from '~/components/ui/label';
+import { Input } from '~/components/ui/input';
 
 type ProductoFormData = {
   nombre: string;
@@ -19,98 +25,7 @@ type ProductoFormData = {
   id_proveedor_principal: string;
 }
 
-
 const columnHelper = createColumnHelper<Producto>();
-
-const columns = [
-  columnHelper.accessor("nombre", {
-    header: createSortableHeader("Producto / SKU"),
-    enableSorting: true,
-    enableColumnFilter: true,
-
-    filterFn: (row, _, value) => {
-      const texto = value.toLowerCase();
-
-      const nombre = row.original.nombre.toLowerCase();
-      const sku = row.original.sku.toLowerCase();
-
-      return (
-        nombre.includes(texto) ||
-        sku.includes(texto)
-      );
-    },
-
-    size: NaN,
-    cell: (info) => (
-      <div className="px-4 py-3">
-        <p className="text-foreground">{info.getValue()}</p>
-        <p className="text-xs text-muted-foreground font-mono">{info.row.original.sku}</p>
-      </div>
-    )
-  }),
-  columnHelper.accessor("categoria_nombre", {
-    header: createSortableHeader("Categoría"),
-    enableSorting: true,
-    enableColumnFilter: true,
-    cell: (info) => (
-      <div className="px-4 py-3 text-muted-foreground">{info.getValue()}</div>
-    )
-  }),
-  columnHelper.accessor("stock_actual", {
-    header: createSortableHeader("Stock"),
-    cell: (info) => {
-      const stock = info.getValue();
-      const { stock_actual, stock_maximo, stock_minimo } = info.row.original;
-
-      const p = Math.min(Math.max((stock_actual - stock_minimo) / (stock_maximo - stock_minimo), 0.0), 1.0);
-
-      let color = "text-foreground";
-
-      if (p <= 0.20) {
-        color = "text-destructive"; // rojo
-      } else if (p <= 0.40) {
-        color = "text-yellow-600"; // amarillo
-      }
-
-      return (
-        <div className="px-4 py-3 text-center">
-          <span className={color}>{stock}</span>
-        </div>
-      );
-    },
-  }),
-  columnHelper.display({
-    id: "minmax",
-    header: "Min / Max",
-    cell: (info) => {
-      const p = info.row.original;
-
-      return <div className="px-4 py-3 text-center text-muted-foreground">{p.stock_minimo} / {p.stock_maximo}</div>;
-    }
-  }),
-  columnHelper.accessor("precio", {
-    header: createSortableHeader("Precio"),
-    cell: (info) => <div className="px-4 py-3 text-center text-foreground">S/ {info.getValue()}</div>
-  }),
-  columnHelper.display({
-    id: "actions",
-    header: "Acciones",
-    cell: () => {
-      return (
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-center gap-2">
-            <button className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground">
-              <Edit2 className="w-3.5 h-3.5" />
-            </button>
-            <button className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive">
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      );
-    }
-  })
-];
 
 export async function loader() {
   const [
@@ -131,6 +46,10 @@ export async function loader() {
 }
 
 export default function Productos({ loaderData }: Route.ComponentProps) {
+  const fetcher = useFetcher();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+
   const [formData, setFormData] = useState<ProductoFormData>({
     nombre: '',
     sku: '',
@@ -142,58 +61,6 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     id_categoria: '',
     id_proveedor_principal: '',
   });
-  const [editId, setEditId] = useState<number | null>(null);
-  const statusConfig = {
-    critical: { label: 'Crítico', variant: 'destructive' as const },
-    warning: { label: 'Aviso', variant: 'secondary' as const },
-    normal: { label: 'Normal', variant: 'outline' as const },
-  };
-
-
-  const aplicarFiltros = async () => {
-    // setLoading(true);
-    try {
-      const params: Record<string, any> = {};
-      // if (filtros.search) params.search = filtros.search;
-      // if (filtros.categoria) params.categoria = filtros.categoria;
-      const response = await productosAPI.getAll(params);
-      // setProductos(response.data);
-    } catch (error) {
-      // setError('Error al aplicar filtros');
-    } finally {
-      // setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // setLoading(true);
-    try {
-      const data = {
-        ...formData,
-        precio: parseFloat(formData.precio),
-        stock_actual: parseInt(formData.stock_actual) || 0,
-        stock_minimo: parseInt(formData.stock_minimo) || 0,
-        stock_maximo: parseInt(formData.stock_maximo) || 0,
-        id_categoria: parseInt(formData.id_categoria),
-        id_proveedor_principal: parseInt(formData.id_proveedor_principal),
-      };
-
-      if (editId) {
-        await productosAPI.update(editId, data);
-      } else {
-        await productosAPI.create(data);
-      }
-
-      resetForm();
-      // cargarDatos();
-    } catch (error) {
-      // setError('Error al guardar el producto');
-      console.error(error);
-    } finally {
-      // setLoading(false);
-    }
-  };
 
   const resetForm = () => {
     setFormData({
@@ -210,8 +77,12 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     setEditId(null);
   };
 
+  const openCreate = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
 
-  const handleEdit = (producto: Producto) => {
+  const openEdit = (producto: Producto) => {
     setFormData({
       nombre: producto.nombre,
       sku: producto.sku,
@@ -224,17 +95,115 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
       id_proveedor_principal: producto.id_proveedor_principal?.toString() || '',
     });
     setEditId(producto.id_producto);
+    setIsDialogOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = (id: number) => {
     if (!confirm('¿Estás seguro de eliminar este producto?')) return;
-    try {
-      await productosAPI.delete(id);
-      // cargarDatos();
-    } catch (error) {
-      // setError('Error al eliminar el producto');
-    }
+    fetcher.submit(
+      { intent: "delete", id_producto: id.toString() },
+      { method: "post" }
+    );
   };
+
+  // Cierra el diálogo tras un envío exitoso
+  useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data && (fetcher.data as any).success) {
+      setIsDialogOpen(false);
+      resetForm();
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  const columns = useMemo(() => [
+    columnHelper.accessor("nombre", {
+      header: createSortableHeader("Producto / SKU"),
+      enableSorting: true,
+      enableColumnFilter: true,
+
+      filterFn: (row, _, value) => {
+        const texto = value.toLowerCase();
+        const nombre = row.original.nombre.toLowerCase();
+        const sku = row.original.sku.toLowerCase();
+        return nombre.includes(texto) || sku.includes(texto);
+      },
+
+      cell: (info) => (
+        <div className="px-4 py-3">
+          <p className="text-foreground">{info.getValue()}</p>
+          <p className="text-xs text-muted-foreground font-mono">{info.row.original.sku}</p>
+        </div>
+      )
+    }),
+    columnHelper.accessor("categoria_nombre", {
+      header: createSortableHeader("Categoría"),
+      enableSorting: true,
+      enableColumnFilter: true,
+      cell: (info) => (
+        <div className="px-4 py-3 text-muted-foreground">{info.getValue()}</div>
+      )
+    }),
+    columnHelper.accessor("stock_actual", {
+      header: createSortableHeader("Stock"),
+      cell: (info) => {
+        const stock = info.getValue();
+        const { stock_actual, stock_maximo, stock_minimo } = info.row.original;
+        const ratio = stock_maximo === stock_minimo ? 1.0 : (stock_actual - stock_minimo) / (stock_maximo - stock_minimo);
+        const p = Math.min(Math.max(ratio, 0.0), 1.0);
+
+        let color = "text-foreground";
+        if (p <= 0.20) {
+          color = "text-destructive"; // rojo
+        } else if (p <= 0.40) {
+          color = "text-yellow-600"; // amarillo
+        }
+
+        return (
+          <div className="px-4 py-3 text-center">
+            <span className={color}>{stock}</span>
+          </div>
+        );
+      },
+    }),
+    columnHelper.display({
+      id: "minmax",
+      header: "Min / Max",
+      cell: (info) => {
+        const p = info.row.original;
+        return <div className="px-4 py-3 text-center text-muted-foreground">{p.stock_minimo} / {p.stock_maximo}</div>;
+      }
+    }),
+    columnHelper.accessor("precio", {
+      header: createSortableHeader("Precio"),
+      cell: (info) => <div className="px-4 py-3 text-center text-foreground">S/ {info.getValue()}</div>
+    }),
+    columnHelper.display({
+      id: "actions",
+      header: "Acciones",
+      cell: (info) => {
+        const producto = info.row.original;
+        return (
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => openEdit(producto)}
+                className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                title="Editar producto"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => handleDelete(producto.id_producto)}
+                className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
+                title="Eliminar producto"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        );
+      }
+    })
+  ], [loaderData.categorias]);
 
   const filters: Filter[] = [
     {
@@ -250,66 +219,98 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     }
   ];
 
+  const errors = fetcher.data && (fetcher.data as any).errors;
+  const generalError = fetcher.data && (fetcher.data as any).error;
+
   return (
-    <div>
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-foreground">Productos</h1>
+          <h1 className="text-2xl font-bold text-foreground">📦 Gestión de Productos</h1>
           <p className="text-sm text-muted-foreground">{loaderData.productos.length} productos registrados</p>
         </div>
-        <Button>
+        <Button onClick={openCreate}>
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Producto
         </Button>
       </div>
-      <h2 className="text-2xl font-bold mb-6">📦 Gestión de Productos</h2>
-      <div className="bg-white rounded-lg shadow mb-6">
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold">
-            {editId ? 'Editar Producto' : 'Nuevo Producto'}
-          </h3>
+
+      {generalError && (
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+          {generalError}
         </div>
-        <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+      )}
+
+      {/* Table */}
+      <TableList data={loaderData.productos} columns={columns} filters={filters}/>
+
+      {/* Dialogo Formulario Producto */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open);
+        if (!open) resetForm();
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {editId ? '📝 Editar Producto' : '✨ Nuevo Producto'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <fetcher.Form method="post" className="space-y-4">
+            {editId && <input type="hidden" name="editId" value={editId} />}
+            <input type="hidden" name="intent" value={editId ? "update" : "create"} />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Nombre *</label>
-                <input
+              <div className="space-y-1">
+                <Label htmlFor="nombre">Nombre *</Label>
+                <Input
+                  id="nombre"
+                  name="nombre"
                   type="text"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  required
                 />
+                {errors?.nombre && <p className="text-destructive text-xs">{errors.nombre[0]}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">SKU *</label>
-                <input
+
+              <div className="space-y-1">
+                <Label htmlFor="sku">SKU *</Label>
+                <Input
+                  id="sku"
+                  name="sku"
                   type="text"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  required
                 />
+                {errors?.sku && <p className="text-destructive text-xs">{errors.sku[0]}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Precio *</label>
-                <input
+
+              <div className="space-y-1">
+                <Label htmlFor="precio">Precio * (S/)</Label>
+                <Input
+                  id="precio"
+                  name="precio"
                   type="number"
                   step="0.01"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0.01"
+                  required
                   value={formData.precio}
                   onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
-                  required
                 />
+                {errors?.precio && <p className="text-destructive text-xs">{errors.precio[0]}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Categoría *</label>
+
+              <div className="space-y-1">
+                <Label htmlFor="id_categoria">Categoría *</Label>
                 <select
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  id="id_categoria"
+                  name="id_categoria"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm h-10"
+                  required
                   value={formData.id_categoria}
                   onChange={(e) => setFormData({ ...formData, id_categoria: e.target.value })}
-                  required
                 >
                   <option value="">Seleccionar categoría...</option>
                   {loaderData.categorias.map((cat) => (
@@ -318,14 +319,18 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
                     </option>
                   ))}
                 </select>
+                {errors?.id_categoria && <p className="text-destructive text-xs">{errors.id_categoria[0]}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Proveedor Principal *</label>
+
+              <div className="space-y-1 md:col-span-2">
+                <Label htmlFor="id_proveedor_principal">Proveedor Principal *</Label>
                 <select
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  id="id_proveedor_principal"
+                  name="id_proveedor_principal"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm h-10"
+                  required
                   value={formData.id_proveedor_principal}
                   onChange={(e) => setFormData({ ...formData, id_proveedor_principal: e.target.value })}
-                  required
                 >
                   <option value="">Seleccionar proveedor...</option>
                   {loaderData.proveedores.map((prov) => (
@@ -334,65 +339,120 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
                     </option>
                   ))}
                 </select>
+                {errors?.id_proveedor_principal && <p className="text-destructive text-xs">{errors.id_proveedor_principal[0]}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Stock Actual</label>
-                <input
+              <div className="space-y-1">
+                <Label htmlFor="stock_actual">Stock Actual *</Label>
+                <Input
+                  id="stock_actual"
+                  name="stock_actual"
                   type="number"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                  required
                   value={formData.stock_actual}
                   onChange={(e) => setFormData({ ...formData, stock_actual: e.target.value })}
                 />
+                {errors?.stock_actual && <p className="text-destructive text-xs">{errors.stock_actual[0]}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Stock Mínimo</label>
-                <input
+
+              <div className="space-y-1">
+                <Label htmlFor="stock_minimo">Stock Mínimo *</Label>
+                <Input
+                  id="stock_minimo"
+                  name="stock_minimo"
                   type="number"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                  required
                   value={formData.stock_minimo}
                   onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })}
                 />
+                {errors?.stock_minimo && <p className="text-destructive text-xs">{errors.stock_minimo[0]}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Stock Máximo</label>
-                <input
+
+              <div className="space-y-1">
+                <Label htmlFor="stock_maximo">Stock Máximo *</Label>
+                <Input
+                  id="stock_maximo"
+                  name="stock_maximo"
                   type="number"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                  required
                   value={formData.stock_maximo}
                   onChange={(e) => setFormData({ ...formData, stock_maximo: e.target.value })}
                 />
+                {errors?.stock_maximo && <p className="text-destructive text-xs">{errors.stock_maximo[0]}</p>}
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Descripción</label>
+            <div className="space-y-1">
+              <Label htmlFor="descripcion">Descripción</Label>
               <textarea
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={2}
+                id="descripcion"
+                name="descripcion"
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm"
+                rows={3}
                 value={formData.descripcion}
                 onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
               />
+              {errors?.descripcion && <p className="text-destructive text-xs">{errors.descripcion[0]}</p>}
             </div>
 
-            <div className="flex gap-2">
-              <Button type="submit">
-                {editId ? 'Actualizar' : 'Guardar'}
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
+                Cancelar
               </Button>
-              {editId && (
-                <Button variant="outline" type="button" onClick={resetForm}>
-                  Cancelar
-                </Button>
-              )}
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* Table */}
-      <TableList data={loaderData.productos} columns={columns} filters={filters}/>
+              <Button type="submit" disabled={fetcher.state !== 'idle'}>
+                {fetcher.state !== 'idle' ? 'Guardando...' : editId ? 'Actualizar' : 'Guardar'}
+              </Button>
+            </DialogFooter>
+          </fetcher.Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const submission = Object.fromEntries(formData);
+  const intent = submission.intent;
+
+  if (intent === "delete") {
+    const id = Number(submission.id_producto);
+    if (isNaN(id)) {
+      return { error: "ID de producto inválido" };
+    }
+    try {
+      await productosAPI.delete(id);
+      return { success: true };
+    } catch (error) {
+      console.error(error);
+      return { error: "Error al eliminar el producto" };
+    }
+  }
+
+  // De lo contrario, es guardar/actualizar
+  // Validamos con el esquema de Zod
+  const result = ProductoSchema.safeParse(submission);
+  
+  if (!result.success) {
+    // Retornamos los errores para que el formulario los muestre
+    return { errors: result.error.flatten().fieldErrors };
+  }
+
+  const editId = submission.editId ? Number(submission.editId) : null;
+  try {
+    if (editId) {
+      await productosAPI.update(editId, result.data);
+    } else {
+      await productosAPI.create(result.data);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: "Error al comunicarse con el servidor" };
+  }
 }
