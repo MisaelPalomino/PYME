@@ -16,6 +16,11 @@ export type Proveedor = {
   telefono: string,
   lead_time_dias: number,
   activo: boolean,
+  porcentaje_cumplimiento: number,
+  categorias: {
+    nombre: string,
+    id_categoria: number
+  }[]
 }
 
 export type Categoria = {
