@@ -118,3 +118,36 @@ ALTER TABLE "alerta" ADD CONSTRAINT "alerta_fk4" FOREIGN KEY ("id_producto") REF
 ALTER TABLE "notificacion" ADD CONSTRAINT "notificacion_fk1" FOREIGN KEY ("id_usuario") REFERENCES "usuario"("id_usuario");
 ALTER TABLE "prediccion" ADD CONSTRAINT "prediccion_fk1" FOREIGN KEY ("id_producto") REFERENCES "producto"("id_producto");
 ALTER TABLE "modelo_ia" ADD CONSTRAINT "modeloIA_fk1" FOREIGN KEY ("id_producto") REFERENCES "producto"("id_producto");
+
+CREATE UNIQUE INDEX idx_producto_sku
+ON producto(sku);
+
+CREATE INDEX idx_producto_categoria
+ON producto(id_categoria);
+
+CREATE INDEX idx_producto_stock
+ON producto(stock_actual);
+
+CREATE INDEX idx_movimiento_producto_fecha
+ON movimiento_inventario(id_producto, fecha DESC);
+
+CREATE INDEX idx_pedido_estado
+ON pedido(estado);
+
+CREATE INDEX idx_pedido_proveedor
+ON pedido(id_proveedor);
+
+CREATE INDEX idx_pedido_fecha
+ON pedido(fecha_creacion);
+
+CREATE INDEX idx_prediccion_producto
+ON prediccion(id_producto);
+
+CREATE INDEX idx_modelo_producto
+ON "modelo_ia"(id_producto);
+
+CREATE INDEX idx_alerta_leida
+ON alerta(leida);
+
+CREATE INDEX idx_notificacion_leida
+ON notificacion(leida);
