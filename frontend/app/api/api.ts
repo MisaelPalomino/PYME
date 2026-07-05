@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Proveedor, Categoria, Producto, Movimiento } from '~/api/types';
+import type { Proveedor, Categoria, Producto, Movimiento, Dashboard } from '~/api/types';
 import { mockProductos, mockCategorias, mockMovimientos } from '~/dataMock';
 
 const API_URL = 'http://localhost:8000/api';
@@ -44,6 +44,10 @@ let localProveedores: Proveedor[] = [
     activo: true
   }
 ];
+
+export const dashboardAPI = {
+  getAll: async () => await api.get<Dashboard>("/dashboard/dashboard")
+}
 
 export const productosAPI = {
   getAll: async (params: Record<string, any> = {}) => {
