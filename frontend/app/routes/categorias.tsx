@@ -96,7 +96,7 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">📂 Gestión de Categorías</h1>
+          <h1 className="text-2xl font-bold text-foreground">Gestión de Categorías</h1>
           <p className="text-sm text-muted-foreground">{loaderData.categorias.length} categorías registradas</p>
         </div>
         {isAdmin && (
@@ -115,7 +115,7 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
 
       {!isAdmin && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
-          📖 <strong>Modo lectura:</strong> Solo puedes ver las categorías. Los cambios solo están disponibles para el administrador.
+          <strong>Modo lectura:</strong> Solo puedes ver las categorías. Los cambios solo están disponibles para el administrador.
         </div>
       )}
 
@@ -161,7 +161,7 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editId ? '📝 Editar Categoría' : '✨ Nueva Categoría'}
+              {editId ? 'Editar Categoría' : 'Nueva Categoría'}
             </DialogTitle>
           </DialogHeader>
 

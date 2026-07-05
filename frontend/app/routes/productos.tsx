@@ -226,7 +226,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">📦 Gestión de Productos</h1>
+          <h1 className="text-2xl font-bold text-foreground">Gestión de Productos</h1>
           <p className="text-sm text-muted-foreground">{loaderData.productos.length} productos registrados</p>
         </div>
         <Button onClick={openCreate}>
@@ -252,7 +252,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editId ? '📝 Editar Producto' : '✨ Nuevo Producto'}
+              {editId ? 'Editar Producto' : 'Nuevo Producto'}
             </DialogTitle>
           </DialogHeader>
 

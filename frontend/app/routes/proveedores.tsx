@@ -109,7 +109,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">🤝 Proveedores</h1>
+          <h1 className="text-2xl font-bold text-foreground">Proveedores</h1>
           <p className="text-sm text-muted-foreground">{loaderData.proveedores.length} proveedores registrados</p>
         </div>
         <Button onClick={openCreate}>
@@ -183,7 +183,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editId ? '📝 Editar Proveedor' : '✨ Nuevo Proveedor'}
+              {editId ? 'Editar Proveedor' : 'Nuevo Proveedor'}
             </DialogTitle>
           </DialogHeader>
 
