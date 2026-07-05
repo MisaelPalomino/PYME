@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.core.models import Producto
-from apps.inventario.models import MovimientoInventario as Movimiento
+from .models import Movimiento
 
 
 class MovimientoService:
