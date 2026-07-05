@@ -15,35 +15,6 @@ const api = axios.create({
 let localProductos = [...mockProductos];
 let localCategorias = [...mockCategorias];
 let localMovimientos = [...mockMovimientos];
-let localProveedores: Proveedor[] = [
-  {
-    id_proveedor: 1,
-    nombre: "Dell Perú",
-    contacto: "Juan Pérez",
-    correo: "ventas@dell.com.pe",
-    telefono: "+51 987 654 321",
-    lead_time_dias: 5,
-    activo: true
-  },
-  {
-    id_proveedor: 2,
-    nombre: "Logitech",
-    contacto: "Ana Gómez",
-    correo: "distribucion@logitech.com",
-    telefono: "+51 912 345 678",
-    lead_time_dias: 3,
-    activo: true
-  },
-  {
-    id_proveedor: 3,
-    nombre: "HyperX",
-    contacto: "Carlos Mendoza",
-    correo: "carlos.m@hyperx.com",
-    telefono: "+51 999 888 777",
-    lead_time_dias: 7,
-    activo: true
-  }
-];
 
 export const dashboardAPI = {
   getAll: async () => await api.get<Dashboard>("/dashboard/dashboard")
@@ -71,31 +42,7 @@ export const productosAPI = {
     try {
       return await api.post<Producto>('/core/productos/', data);
     } catch (e) {
-      const newProduct: Producto = {
-        id_producto: Math.max(...localProductos.map(p => p.id_producto), 0) + 1,
-        nombre: data.nombre,
-        sku: data.sku,
-        descripcion: data.descripcion || '',
-        precio: Number(data.precio),
-        stock_actual: Number(data.stock_actual),
-        stock_minimo: Number(data.stock_minimo),
-        stock_maximo: Number(data.stock_maximo),
-        id_categoria: Number(data.id_categoria),
-        categoria_nombre: localCategorias.find(c => c.id_categoria === Number(data.id_categoria))?.nombre || 'General',
-        id_proveedor_principal: Number(data.id_proveedor_principal),
-        proveedor_nombre: localProveedores.find(p => p.id_proveedor === Number(data.id_proveedor_principal))?.nombre || 'Proveedor',
-        estado: 'normal'
-      };
-      
-      // Calcular estado inicial
-      if (newProduct.stock_actual <= newProduct.stock_minimo) {
-        newProduct.estado = 'critical';
-      } else if (newProduct.stock_actual <= newProduct.stock_minimo * 1.5) {
-        newProduct.estado = 'warning';
-      }
-      
-      localProductos.push(newProduct);
-      return { data: newProduct };
+      throw new Error("Hermano, implementa esta m...");
     }
   },
   update: async (id: number, data: any) => {
@@ -202,7 +149,7 @@ export const categoriasAPI = {
 export const proveedoresAPI = {
   getAll: async () => {
     try {
-      return await api.get<Proveedor[]>('/proveedores/');
+      return await api.get<Proveedor[]>('/proveedores/proveedores/');
     } catch (e) {
       console.warn("[API Fallback] Backend offline. Usando base de datos simulada para Proveedores.");
       return { data: localProveedores };
@@ -219,9 +166,10 @@ export const proveedoresAPI = {
   },
   create: async (data: any) => {
     try {
-      return await api.post('/proveedores/', data);
+      return await api.post('/proveedores/proveedores/', data);
     } catch (e) {
-      const newProv: Proveedor = {
+      throw new Error("Hermano, implementa esta m...");
+      /*const newProv: Proveedor = {
         id_proveedor: Math.max(...localProveedores.map(p => p.id_proveedor), 0) + 1,
         nombre: data.nombre,
         contacto: data.contacto,
@@ -231,7 +179,7 @@ export const proveedoresAPI = {
         activo: true
       };
       localProveedores.push(newProv);
-      return { data: newProv };
+      return { data: newProv };*/
     }
   },
   update: async (id: number, data: any) => {
