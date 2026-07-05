@@ -10,4 +10,5 @@ urlpatterns = [
     path("api/ia/", include("apps.ia.urls")),
     path("api/proveedores/", include("apps.proveedores.urls")),
     path("api/dashboard/", include("apps.dashboard.urls")),
+    path("api/movimientos/", include("apps.movimientos.urls")),
 ]
