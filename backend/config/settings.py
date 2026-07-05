@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.pedidos",
     "apps.ia",
     "apps.proveedores",
+    "apps.movimientos"
 ]
 
 AUTH_USER_MODEL = "authentication.Usuario"
