@@ -5,6 +5,7 @@ export type Movimiento = {
   fecha: Date,
   cantidad: number,
   observaciones: string,
+  id_producto?: number,
 }
 
 export type Proveedor = {

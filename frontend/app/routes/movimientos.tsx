@@ -1,13 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import type { Movimiento } from '~/api/types';
-import { mockMovimientos } from '~/dataMock'; // FIXME: Delete this
 import { createColumnHelper } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
+import type { Route } from "./+types/movimientos";
+import { useFetcher } from "react-router";
+import { movimientosAPI, productosAPI } from '~/api/api';
+import { MovimientoSchema } from '~/lib/schemas/movimiento.schema';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
+import { Label } from '~/components/ui/label';
+import { Input } from '~/components/ui/input';
+import type { ActionFunctionArgs } from "react-router";
+import { useAuth } from '~/context/AuthContext';
+
+export async function loader() {
+  const [
+    { data: movimientos },
+    { data: productos }
+  ] = await Promise.all([
+    movimientosAPI.getAll(),
+    productosAPI.getAll()
+  ]);
+
+  return {
+    movimientos,
+    productos
+  };
+}
 
 const columnHelper = createColumnHelper<Movimiento>();
 
@@ -16,7 +39,6 @@ const columns = [
     header: createSortableHeader("Producto"),
     size: NaN,
     cell: (info) => (
-      // <p className="text-xs text-muted-foreground font-mono">{m.sku}</p>
       <p className="px-4 py-3 text-foreground">{info.getValue()}</p>
     )
   }),
@@ -24,7 +46,6 @@ const columns = [
     header: "Tipo",
     cell: (info) => {
       const m = info.row.original;
-
       return (
         <div className="px-4 py-3 text-center">
           <Badge variant={m.tipo_movimiento === "Entrada" ? 'outline' : 'secondary'} className="gap-1">
@@ -42,7 +63,7 @@ const columns = [
     cell: (info) => {
       const m = info.row.original;
       return (
-        <div className="px-4 py-3 text-center">
+        <div className="px-4 py-3 text-center font-medium">
           <span className={m.tipo_movimiento === 'Entrada' ? 'text-green-600' : 'text-red-600'}>
             {m.tipo_movimiento === 'Entrada' ? '+' : '-'}{m.cantidad}
           </span>
@@ -59,6 +80,7 @@ const columns = [
     )
   }),
   columnHelper.display({
+    id: "observaciones",
     header: "Observaciones",
     size: NaN,
     cell: (info) => (
@@ -81,41 +103,42 @@ const filters: Filter[] = [
   }
 ];
 
-export default function Movements() {
+export default function Movements({ loaderData }: Route.ComponentProps) {
+  const fetcher = useFetcher();
+  const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({
-    productId: '', type: 'entrada' as 'entrada' | 'salida',
-    quantity: 1, observations: '', reason: '',
+  const [formData, setFormData] = useState({
+    id_producto: '',
+    tipo_movimiento: 'Entrada',
+    cantidad: '1',
+    observaciones: '',
   });
 
-  function handleSave() {
-    /*
-    const product = products.find(p => p.id === form.productId);
-    if (!product) return;
-    const newMovement: Movement = {
-      id: `m${Date.now()}`,
-      productId: form.productId,
-      productName: product.name,
-      sku: product.sku,
-      type: form.type,
-      quantity: form.quantity,
-      date: new Date(),
-      userId: 'u3',
-      userName: 'Carlos Mendoza',
-      observations: form.observations,
-      reason: form.reason || (form.type === 'entrada' ? 'Compra' : 'Venta'),
-    };
-    setItems(prev => [newMovement, ...prev]);
-    setDialogOpen(false);
-    setForm({ productId: '', type: 'entrada', quantity: 1, observations: '', reason: '' });
-    */
-  }
+  const resetForm = () => {
+    setFormData({
+      id_producto: '',
+      tipo_movimiento: 'Entrada',
+      cantidad: '1',
+      observaciones: '',
+    });
+  };
+
+  // Cierra el diálogo tras un envío exitoso
+  useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data && (fetcher.data as any).success) {
+      setDialogOpen(false);
+      resetForm();
+    }
+  }, [fetcher.state, fetcher.data]);
+
+  const errors = fetcher.data && (fetcher.data as any).errors;
+  const generalError = fetcher.data && (fetcher.data as any).error;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-foreground">Movimientos de Inventario</h1>
+          <h1 className="text-2xl font-bold text-foreground">Movimientos de Inventario</h1>
           <p className="text-sm text-muted-foreground">Registro de entradas y salidas de stock</p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
@@ -124,50 +147,128 @@ export default function Movements() {
         </Button>
       </div>
 
+      {generalError && (
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+          {generalError}
+        </div>
+      )}
+
       {/* Table */}
-      <TableList columns={columns} data={mockMovimientos} filters={filters} />
-      {/*
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <TableList columns={columns} data={loaderData.movimientos} filters={filters} />
+
+      {/* Dialogo Formulario Registro Movimiento */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) resetForm();
+      }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Registrar Movimiento</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
+          <DialogHeader>
+            <DialogTitle>Registrar Movimiento</DialogTitle>
+          </DialogHeader>
+
+          <fetcher.Form method="post" className="space-y-4">
+            <input type="hidden" name="id_usuario" value={user?.id || 1} />
+
             <div className="space-y-1">
-              <Label>Producto</Label>
-              <Select value={form.productId} onValueChange={v => setForm(f => ({ ...f, productId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
-                <SelectContent>
-                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="id_producto">Producto *</Label>
+              <select
+                id="id_producto"
+                name="id_producto"
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm h-10"
+                required
+                value={formData.id_producto}
+                onChange={(e) => setFormData({ ...formData, id_producto: e.target.value })}
+              >
+                <option value="">Seleccionar producto...</option>
+                {loaderData.productos.map((p) => (
+                  <option key={p.id_producto} value={p.id_producto}>
+                    {p.nombre} ({p.sku}) — Stock: {p.stock_actual}
+                  </option>
+                ))}
+              </select>
+              {errors?.id_producto && <p className="text-destructive text-xs">{errors.id_producto[0]}</p>}
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label>Tipo</Label>
-                <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as 'entrada' | 'salida' }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="entrada">Entrada (Compra)</SelectItem>
-                    <SelectItem value="salida">Salida (Venta/Consumo)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="tipo_movimiento">Tipo *</Label>
+                <select
+                  id="tipo_movimiento"
+                  name="tipo_movimiento"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm h-10"
+                  required
+                  value={formData.tipo_movimiento}
+                  onChange={(e) => setFormData({ ...formData, tipo_movimiento: e.target.value })}
+                >
+                  <option value="Entrada">Entrada (Compra)</option>
+                  <option value="Salida">Salida (Venta/Consumo)</option>
+                </select>
+                {errors?.tipo_movimiento && <p className="text-destructive text-xs">{errors.tipo_movimiento[0]}</p>}
               </div>
+
               <div className="space-y-1">
-                <Label>Cantidad</Label>
-                <Input type="number" min={1} value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: +e.target.value }))} />
+                <Label htmlFor="cantidad">Cantidad *</Label>
+                <Input
+                  id="cantidad"
+                  name="cantidad"
+                  type="number"
+                  min="1"
+                  required
+                  value={formData.cantidad}
+                  onChange={(e) => setFormData({ ...formData, cantidad: e.target.value })}
+                />
+                {errors?.cantidad && <p className="text-destructive text-xs">{errors.cantidad[0]}</p>}
               </div>
             </div>
+
             <div className="space-y-1">
-              <Label>Observaciones</Label>
-              <Input value={form.observations} onChange={e => setForm(f => ({ ...f, observations: e.target.value }))} placeholder="Notas adicionales..." />
+              <Label htmlFor="observaciones">Observaciones</Label>
+              <textarea
+                id="observaciones"
+                name="observaciones"
+                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm"
+                rows={3}
+                value={formData.observaciones}
+                onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+                placeholder="Notas adicionales..."
+              />
+              {errors?.observaciones && <p className="text-destructive text-xs">{errors.observaciones[0]}</p>}
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={!form.productId}>Registrar</Button>
-          </DialogFooter>
+
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={fetcher.state !== 'idle'}>
+                {fetcher.state !== 'idle' ? 'Guardando...' : 'Registrar'}
+              </Button>
+            </DialogFooter>
+          </fetcher.Form>
         </DialogContent>
       </Dialog>
-      */}
     </div>
   );
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const submission = Object.fromEntries(formData);
+
+  const result = MovimientoSchema.safeParse(submission);
+  if (!result.success) {
+    return { errors: result.error.flatten().fieldErrors };
+  }
+
+  try {
+    const userId = submission.id_usuario ? Number(submission.id_usuario) : 1;
+    await movimientosAPI.create({
+      ...result.data,
+      id_usuario: userId
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error(error);
+    const message = error.response?.data?.error || "Error al comunicarse con el servidor";
+    return { error: message };
+  }
 }
