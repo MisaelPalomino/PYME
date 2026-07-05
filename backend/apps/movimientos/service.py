@@ -10,6 +10,21 @@ from apps.inventario.models import MovimientoInventario as Movimiento
 
 class MovimientoService:
     @staticmethod
+    def listar(tipo=None, busqueda=None):
+        queryset = Movimiento.objects.select_related('id_producto', 'id_usuario')
+
+        if tipo:
+            queryset = queryset.filter(tipo_movimiento=tipo)
+
+        if busqueda:
+            queryset = queryset.filter(
+                Q(id_producto__nombre__icontains=busqueda) |
+                Q(id_producto__sku__icontains=busqueda)
+            )
+
+        return queryset
+
+    @staticmethod
     @transaction.atomic
     def registrar(tipo_movimiento, id_producto, cantidad, id_usuario, observaciones):
         producto = get_object_or_404(

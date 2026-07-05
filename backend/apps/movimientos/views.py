@@ -10,6 +10,13 @@ from .service import MovimientoService
 class MovimientoListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        tipo = request.query_params.get('tipo')          # 'entrada' | 'salida' | None (Todos)
+        busqueda = request.query_params.get('busqueda')   # texto: nombre o SKU de producto
+        movimientos = MovimientoService.listar(tipo=tipo, busqueda=busqueda)
+        serializer = MovimientoSerializer(movimientos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def post(self, request):
         serializer = MovimientoCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
