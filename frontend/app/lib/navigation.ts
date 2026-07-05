@@ -5,6 +5,7 @@ import {
   Tag,
   Truck,
   Warehouse,
+  Brain,
   type LucideIcon
 } from "lucide-react";
 
@@ -52,5 +53,11 @@ export const navigation: NavigationItem[] = [
     path: "routes/inventario.tsx",
     label: "Inventario",
     icon: Warehouse,
+  },
+  {
+    url: "predicciones",
+    path: "routes/predicciones.tsx",
+    label: "Predicciones",
+    icon: Brain,
   }
 ];

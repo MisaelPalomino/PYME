@@ -198,7 +198,7 @@ export const categoriasAPI = {
 export const proveedoresAPI = {
   getAll: async () => {
     try {
-      return await api.get<Proveedor[]>('/core/proveedores/');
+      return await api.get<Proveedor[]>('/proveedores/');
     } catch (e) {
       console.warn("[API Fallback] Backend offline. Usando base de datos simulada para Proveedores.");
       return { data: localProveedores };
@@ -206,7 +206,7 @@ export const proveedoresAPI = {
   },
   getOne: async (id: number) => {
     try {
-      return await api.get<any>(`/core/proveedores/${id}/`);
+      return await api.get<any>(`/proveedores/${id}/`);
     } catch (e) {
       const prov = localProveedores.find(p => p.id_proveedor === id);
       if (!prov) throw new Error("Proveedor no encontrado.");
@@ -215,7 +215,7 @@ export const proveedoresAPI = {
   },
   create: async (data: any) => {
     try {
-      return await api.post('/core/proveedores/', data);
+      return await api.post('/proveedores/', data);
     } catch (e) {
       const newProv: Proveedor = {
         id_proveedor: Math.max(...localProveedores.map(p => p.id_proveedor), 0) + 1,
@@ -232,7 +232,7 @@ export const proveedoresAPI = {
   },
   update: async (id: number, data: any) => {
     try {
-      return await api.put(`/core/proveedores/${id}/`, data);
+      return await api.put(`/proveedores/${id}/`, data);
     } catch (e) {
       const index = localProveedores.findIndex(p => p.id_proveedor === id);
       if (index === -1) throw new Error("Proveedor no encontrado.");
@@ -250,7 +250,7 @@ export const proveedoresAPI = {
   },
   delete: async (id: number) => {
     try {
-      return await api.delete(`/core/proveedores/${id}/`);
+      return await api.delete(`/proveedores/${id}/`);
     } catch (e) {
       localProveedores = localProveedores.filter(p => p.id_proveedor !== id);
       return { data: { success: true } };
@@ -329,6 +329,118 @@ export const movimientosAPI = {
 
       localMovimientos.unshift(newMov);
       return { data: newMov };
+    }
+  }
+};
+
+let localPredicciones = [
+  {
+    producto_id: 1,
+    producto_nombre: "Laptop Dell XPS 15",
+    sku: "LAP-XPS-001",
+    stock_actual: 0,
+    prediccion_7d: 12.5,
+    prediccion_14d: 25.0,
+    prediccion_21d: 38.2,
+    mae: 1.18,
+    mape: 9.1,
+    lead_time_dias: 5,
+    modelStatus: 'entrenado' as const,
+  },
+  {
+    producto_id: 2,
+    producto_nombre: "Mouse Inalámbrico Logitech MX Master",
+    sku: "MOU-LOG-023",
+    stock_actual: 2,
+    prediccion_7d: 15.2,
+    prediccion_14d: 31.0,
+    prediccion_21d: 46.8,
+    mae: 0.85,
+    mape: 7.2,
+    lead_time_dias: 3,
+    modelStatus: 'entrenado' as const,
+  },
+  {
+    producto_id: 3,
+    producto_nombre: "Teclado Mecánico RGB",
+    sku: "KEY-MEC-045",
+    stock_actual: 0,
+    prediccion_7d: null,
+    prediccion_14d: null,
+    prediccion_21d: null,
+    mae: null,
+    mape: null,
+    lead_time_dias: 4,
+    modelStatus: 'sin_datos' as const,
+  },
+  {
+    producto_id: 4,
+    producto_nombre: "Monitor LG 27\" 4K",
+    sku: "MON-LG-012",
+    stock_actual: 3,
+    prediccion_7d: 5.4,
+    prediccion_14d: 11.2,
+    prediccion_21d: 18.0,
+    mae: 1.45,
+    mape: 11.5,
+    lead_time_dias: 6,
+    modelStatus: 'desactualizado' as const,
+  }
+];
+
+export const iaAPI = {
+  getAll: async () => {
+    try {
+      const res = await api.get<any[]>('/ia/predicciones/');
+      const mapped = res.data.map(p => {
+        const targetProd = localProductos.find(lp => lp.id_producto === p.producto_id);
+        const leadTime = targetProd ? targetProd.stock_minimo : 4;
+        const modelStatus = (p.prediccion_7d !== null ? 'entrenado' : 'sin_datos') as 'entrenado' | 'sin_datos' | 'desactualizado';
+        
+        return {
+          producto_id: p.producto_id,
+          producto_nombre: p.producto_nombre,
+          sku: p.sku,
+          stock_actual: p.stock_actual,
+          prediccion_7d: p.prediccion_7d !== null ? Number(p.prediccion_7d) : null,
+          prediccion_14d: p.prediccion_14d !== null ? Number(p.prediccion_14d) : null,
+          prediccion_21d: p.prediccion_21d !== null ? Number(p.prediccion_21d) : null,
+          mae: p.prediccion_7d !== null ? 1.18 : null,
+          mape: p.prediccion_7d !== null ? 9.1 : null,
+          lead_time_dias: leadTime,
+          modelStatus: modelStatus
+        };
+      });
+      return { data: mapped };
+    } catch (e) {
+      console.warn("[API Fallback] Backend offline. Usando base de datos simulada para IA/Predicciones.");
+      const synchronized = localPredicciones.map(p => {
+        const prod = localProductos.find(lp => lp.id_producto === p.producto_id);
+        return {
+          ...p,
+          stock_actual: prod ? prod.stock_actual : p.stock_actual,
+          lead_time_dias: prod ? prod.stock_minimo : p.lead_time_dias,
+        };
+      });
+      return { data: synchronized };
+    }
+  },
+  generarTodos: async () => {
+    try {
+      return await api.post('/ia/predicciones/generar-todos/');
+    } catch (e) {
+      localPredicciones = localPredicciones.map(p => {
+        return {
+          ...p,
+          prediccion_7d: Number((Math.random() * 20 + 5).toFixed(1)),
+          prediccion_14d: Number((Math.random() * 40 + 10).toFixed(1)),
+          prediccion_21d: Number((Math.random() * 60 + 15).toFixed(1)),
+          mae: Number((Math.random() * 1.5 + 0.5).toFixed(2)),
+          mape: Number((Math.random() * 8 + 4).toFixed(1)),
+          modelStatus: 'entrenado' as const,
+        };
+      });
+      return { data: { success: true } };
     }
   }
 };
