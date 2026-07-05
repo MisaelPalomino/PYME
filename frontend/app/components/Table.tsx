@@ -14,7 +14,7 @@ import {
 } from "./ui/combobox";
 import Pagination from "./Pagination";
 
-export type Filter = { columnName: string, placeholder: string } & ({
+export type Filter = { columnName: string, placeholder: string, defaultValue?: string } & ({
   type: "input",
 } | {
   type: "combobox",
@@ -30,6 +30,7 @@ export type TableProps<T extends RowData> = {
 function FilterInput(props: {
   name: string,
   placeholder: string,
+  defaultValue?: string,
   setChangeValue: (key: string, value: string) => void
 }) {
   const [value, setValue] = useState<string>("");
@@ -46,13 +47,14 @@ function FilterInput(props: {
   return (
     <div className="relative flex-1">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-      <Input placeholder={props.placeholder} className="pl-9" value={value} onChange={(e) => handleChange(e.target.value)} />
+      <Input placeholder={props.placeholder} className="pl-9" value={value} defaultValue={props.defaultValue} onChange={(e) => handleChange(e.target.value)} />
     </div>
   );
 }
 
 function FilterCombobox(props: {
   name: string,
+  defaultValue?: string,
   placeholder: string,
   items: string[],
   setChangeValue: (key: string, value: string) => void
@@ -62,7 +64,7 @@ function FilterCombobox(props: {
   }
 
   return (
-    <Combobox items={props.items} onValueChange={handleChange}>
+    <Combobox items={props.items} onValueChange={handleChange} defaultValue={props.defaultValue}>
       <ComboboxInput placeholder={props.placeholder} showClear />
       <ComboboxContent>
         <ComboboxEmpty>No encontrado.</ComboboxEmpty>
@@ -101,7 +103,11 @@ export function createSortableHeader<TData, TValue>(name: string) {
 
 export function TableWireframe<T extends RowData>({ data, columns, filters, children }: TableProps<T> & { children?: (table: Table<T>) => React.ReactNode }) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+    filters
+      .filter(f => f.defaultValue)
+      .map(f => ({id: f.columnName, value: f.defaultValue}))
+  );
   const table = useReactTable({
     data,
     columns,
@@ -119,7 +125,6 @@ export function TableWireframe<T extends RowData>({ data, columns, filters, chil
   });
 
   function setChangeValue(name: string, value: string) {
-    console.log(`${name}: ${value}`);
     table.getColumn(name)?.setFilterValue(value);
   }
 
@@ -133,9 +138,9 @@ export function TableWireframe<T extends RowData>({ data, columns, filters, chil
               {filters.map(f => {
                 switch (f.type) {
                   case "input":
-                    return <FilterInput placeholder={f.placeholder} name={f.columnName} setChangeValue={setChangeValue} />
+                    return <FilterInput placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} />
                   case "combobox":
-                    return <FilterCombobox placeholder={f.placeholder} name={f.columnName} setChangeValue={setChangeValue} items={f.items} />
+                    return <FilterCombobox placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} items={f.items} />
                 }
               })}
             </div>

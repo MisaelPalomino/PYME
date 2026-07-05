@@ -11,7 +11,10 @@ import { createSortableHeader, TableList, type Filter } from '~/components/Table
 import type { Route } from "./+types/inventario";
 import { productosAPI, categoriasAPI, movimientosAPI } from "~/api/api";
 
-export async function loader() {
+export async function loader({ request }: Route.LoaderArgs) {
+  const url = new URL(request.url);
+  const defaultTipo = url.searchParams.get("tipo");
+
   const [
     { data: backendProductos },
     { data: categorias },
@@ -21,6 +24,27 @@ export async function loader() {
     categoriasAPI.getAll(),
     movimientosAPI.getAll()
   ]);
+
+  const filters: Filter[] = [
+    {
+      type: "input",
+      columnName: "nombre",
+      placeholder: "Buscar producto o SKU..."
+    },
+    {
+      type: "combobox",
+      columnName: "categoria_nombre",
+      placeholder: "Todas las categorías",
+      items: categorias.map(x => x.nombre)
+    },
+    {
+      type: "combobox",
+      columnName: "stock_actual",
+      placeholder: "Todos los rangos",
+      defaultValue: defaultTipo ?? undefined,
+      items: ["Normal", "Advertencia", "Crítico"]
+    }
+  ];
 
   const productos = backendProductos.map(p => {
     let estado: "normal" | "warning" | "critical" = "normal";
@@ -45,7 +69,8 @@ export async function loader() {
   return {
     productos,
     categorias,
-    movimientos
+    movimientos,
+    filters,
   };
 }
 
@@ -64,25 +89,6 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
   const historyProduct = loaderData.productos.find(p => p.id_producto === historyProductId);
   const productHistory = loaderData.movimientos.filter(m => m.id_producto === historyProductId);
 
-  const filters: Filter[] = [
-    {
-      type: "input",
-      columnName: "nombre",
-      placeholder: "Buscar producto o SKU..."
-    },
-    {
-      type: "combobox",
-      columnName: "categoria_nombre",
-      placeholder: "Todas las categorías",
-      items: loaderData.categorias.map(x => x.nombre)
-    },
-    {
-      type: "combobox",
-      columnName: "stock_actual",
-      placeholder: "Todos los rangos",
-      items: ["Normal", "Advertencia", "Crítico"]
-    }
-  ];
 
   const columns = [
     columnHelper.accessor("nombre", {
@@ -202,7 +208,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
       </div>
 
       {/* Inventory table */}
-      <TableList columns={columns} data={loaderData.productos} filters={filters} />
+      <TableList columns={columns} data={loaderData.productos} filters={loaderData.filters} />
 
       {/* History dialog */}
       <Dialog open={!!historyProductId} onOpenChange={(open) => { if (!open) setHistoryProductId(null); }}>
