@@ -1,9 +1,9 @@
 from django.urls import path
-from .views import RegistrarMovimientoView
+from .views import MovimientoListCreateView
 
 urlpatterns = [
     path(
-        "registrar/",
-        RegistrarMovimientoView.as_view(),
+        "",
+        MovimientoListCreateView.as_view(),
     ),
 ]
