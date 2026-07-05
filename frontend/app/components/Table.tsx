@@ -138,9 +138,9 @@ export function TableWireframe<T extends RowData>({ data, columns, filters, chil
               {filters.map(f => {
                 switch (f.type) {
                   case "input":
-                    return <FilterInput placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} />
+                    return <FilterInput key={f.columnName} placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} />
                   case "combobox":
-                    return <FilterCombobox placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} items={f.items} />
+                    return <FilterCombobox key={f.columnName} placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} items={f.items} />
                 }
               })}
             </div>
@@ -148,10 +148,10 @@ export function TableWireframe<T extends RowData>({ data, columns, filters, chil
         </Card>
       }
 
+      <Pagination table={table} />
+
       { /* Table */}
       {children?.(table)}
-
-      <Pagination table={table} />
     </>
   )
 }
@@ -229,7 +229,7 @@ export function TableCard<T extends RowData>({ data, columns, filters, children 
               </div>
             }
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {table.getRowModel().rows.map(row => children(row.original))}
             </div>
           </>
