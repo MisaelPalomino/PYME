@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.inventario.models import MovimientoInventario as Movimiento
+from .models import Movimiento
 
 class MovimientoCreateSerializer(serializers.Serializer):
     tipo_movimiento = serializers.ChoiceField(choices=Movimiento.TIPO_CHOICES)
