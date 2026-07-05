@@ -74,21 +74,6 @@ function buildKpis(resumen: apiTypes.Dashboard["resumen"]) {
 
 export default function Home({ loaderData }: Route.ComponentProps) {
   const navigate = useNavigate();
-
-  /*
-  const criticalProducts = products.filter(p => p.status === 'critical');
-  const warningProducts = products.filter(p => p.status === 'warning');
-  const criticalPredictions = predictions.filter(p => p.alertType === 'critical');
-  const warningPredictions = predictions.filter(p => p.alertType === 'warning');
-  const unreadAlerts = systemAlerts.filter(a => !a.read);
-
-  const severityConfig = {
-    critical: { bg: 'bg-destructive/10', border: 'border-destructive/30', badge: 'destructive' as const, dot: 'bg-destructive' },
-    warning: { bg: 'bg-yellow-50 dark:bg-yellow-900/10', border: 'border-yellow-300 dark:border-yellow-700', badge: 'secondary' as const, dot: 'bg-yellow-500' },
-    info: { bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-300 dark:border-blue-700', badge: 'secondary' as const, dot: 'bg-blue-500' },
-  };
-
-  */
   const kpis = buildKpis(loaderData.resumen);
   const chartData = loaderData.ventas_diarias.map((v) => ({
     dia: new Date(v.dia).toLocaleDateString("es-PE", {
@@ -106,11 +91,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         <div>
           <h1 className="text-foreground">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
-            {format(loaderData.generado_en, "EEEE, d 'de' MMMM yyyy", { locale: es })} — Visión global del inventario
+            {format(loaderData.generado_en, "EEEE, d 'de' MMMM 'de' yyyy 'a las' HH:mm:ss", { locale: es })} — Visión global del inventario
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
             <RefreshCw className="w-4 h-4 mr-2" />
             Actualizar
           </Button>
@@ -168,28 +153,28 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <ScrollArea className="h-[500px] pr-3">
             <div className="space-y-3">
               {loaderData.alertas_activas.map((alert) => {
+                let cfg: any = { bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-300 dark:border-blue-700', badge: 'secondary' as const, dot: 'bg-blue-500' };
+                switch (alert.tipo_alerta) {
+                  case "sin_stock":
+                    cfg = { bg: 'bg-destructive/10', border: 'border-destructive/30', badge: 'destructive' as const, dot: 'bg-destructive' };
+                  break;
+                  case "stock_bajo":
+                    cfg = { bg: 'bg-yellow-50 dark:bg-yellow-900/10', border: 'border-yellow-300 dark:border-yellow-700', badge: 'secondary' as const, dot: 'bg-yellow-500' };
+                    break;
+                }
                 // const cfg = severityConfig[alert.tipo_alerta] ?? severityConfig.default;
-                // className={`p-3 rounded-xl border ${cfg.bg} ${cfg.border} cursor-pointer hover:opacity-80 transition-opacity`}
-                // className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${cfg.dot}`}
                 /*
                  
-                      <Badge variant={cfg.badge} className="text-xs shrink-0">
-                        {alert.tipo_alerta === "critical"
-                          ? "Crítico"
-                          : alert.tipo_alerta === "warning"
-                            ? "Aviso"
-                            : "Info"}
-                      </Badge>
                 */
 
                 return (
                   <div
                     key={alert.id_alerta}
-                    className={`p-3 rounded-xl border cursor-pointer hover:opacity-80 transition-opacity`}
+                    className={`p-3 rounded-xl border ${cfg.bg} ${cfg.border} cursor-pointer hover:opacity-80 transition-opacity`}
                   >
                     <div className="flex items-start gap-2">
                       <div
-                        className={`w-2 h-2 rounded-full mt-1.5 shrink-0`}
+                      className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${cfg.dot}`}
                       />
 
                       <div className="flex-1 min-w-0">
@@ -214,7 +199,13 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                           </p>
                         </div>
                       </div>
-
+                      <Badge variant={cfg.badge} className="text-xs shrink-0">
+                        {alert.tipo_alerta === "sin_stock"
+                          ? "Crítico"
+                          : alert.tipo_alerta === "stock_bajo"
+                            ? "Aviso"
+                            : "Info"}
+                      </Badge>
                     </div>
                   </div>
                 );

@@ -82,7 +82,7 @@ export type Dashboard = {
     mensaje: string,
     id_alerta: number,
     id_producto: number,
-    tipo_alerta: string,
+    tipo_alerta: "sin_stock" | "stock_bajo",
     stock_actual: number,
     stock_minimo: number,
     fecha_creacion: Date,
