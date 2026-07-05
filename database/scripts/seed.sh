@@ -25,3 +25,7 @@ sudo PGPASSWORD="$DB_PASSWORD" docker compose exec -T db \
 sudo PGPASSWORD="$DB_PASSWORD" docker compose exec -T db \
   psql -U "$DB_USERNAME" -d "$DB_NAME" \
   <"$SCRIPT_DIR/../resources/data_pedidos.sql"
+
+sudo PGPASSWORD="$DB_PASSWORD" docker compose exec -T db \
+  psql -U "$DB_USERNAME" -d "$DB_NAME" \
+  <"$SCRIPT_DIR/../resources/new_data.sql"

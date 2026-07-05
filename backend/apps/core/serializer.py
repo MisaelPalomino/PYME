@@ -1,16 +1,16 @@
 from rest_framework import serializers
 
-from .models import Categoria, Proveedor, Producto
+from .models import Categoria, Producto
 
 
 class CategoriaSerializer(serializers.ModelSerializer):
+    numero_productos = serializers.IntegerField(
+        source="productos_count", read_only=True
+    )
+
     class Meta:
         model = Categoria
-        fields = (
-            "id_categoria",
-            "nombre",
-            "descripcion",
-        )
+        fields = ("id_categoria", "nombre", "descripcion", "numero_productos")
         read_only_fields = ("id_categoria",)
 
     def validate_nombre(self, value):
@@ -20,28 +20,6 @@ class CategoriaSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "El nombre de la categoría es obligatorio."
             )
-
-        return value
-
-
-class ProveedorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Proveedor
-        fields = (
-            "id_proveedor",
-            "nombre",
-            "contacto",
-            "correo",
-            "telefono",
-            "lead_time_dias",
-            "activo",
-        )
-        read_only_fields = ("id_proveedor",)
-
-    def validate_lead_time_dias(self, value):
-
-        if value < 0:
-            raise serializers.ValidationError("El Lead Time no puede ser negativo.")
 
         return value
 
