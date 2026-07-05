@@ -5,7 +5,7 @@ from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 from sklearn.model_selection import train_test_split
 from datetime import timedelta
 from django.utils import timezone
-from apps.inventario.models import MovimientoInventario
+from apps.movimientos.models import Movimiento
 from apps.core.models import Producto
 
 
@@ -20,7 +20,7 @@ class IACalculations:
         """
         fecha_limite = timezone.now() - timedelta(days=dias_historial)
 
-        movimientos = MovimientoInventario.objects.filter(
+        movimientos = Movimiento.objects.filter(
             id_producto=producto, tipo_movimiento="salida", fecha__gte=fecha_limite
         ).order_by("fecha")
 
