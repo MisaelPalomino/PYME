@@ -4,10 +4,7 @@ from .models import Pedido, DetallePedido
 
 
 class DetallePedidoSerializer(serializers.ModelSerializer):
-    producto_nombre = serializers.CharField(
-        source="id_producto.nombre", 
-        read_only=True
-    )
+    producto_nombre = serializers.CharField(source="id_producto.nombre", read_only=True)
 
     class Meta:
         model = DetallePedido
@@ -22,46 +19,30 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
 
     def validate_cantidad(self, value):
         if value <= 0:
-            raise serializers.ValidationError(
-                "La cantidad debe ser mayor que cero."
-            )
+            raise serializers.ValidationError("La cantidad debe ser mayor que cero.")
         return value
 
     def validate_precio_unitario(self, value):
         if value <= 0:
-            raise serializers.ValidationError(
-                "El precio debe ser mayor que cero."
-            )
+            raise serializers.ValidationError("El precio debe ser mayor que cero.")
         return value
 
 
 class PedidoSerializer(serializers.ModelSerializer):
     detalles = DetallePedidoSerializer(
-        source="detallepedido_set", 
-        many=True, 
-        read_only=True
+        source="detallepedido_set", many=True, read_only=True
     )
-    
+
     proveedor_nombre = serializers.CharField(
-        source="id_proveedor.nombre", 
-        read_only=True
+        source="id_proveedor.nombre", read_only=True
     )
-    
-    usuario_nombre = serializers.CharField(
-        source="id_usuario.nombre", 
-        read_only=True
-    )
-    
+
+    usuario_nombre = serializers.CharField(source="id_usuario.nombre", read_only=True)
+
     # Campos que vienen del annotate en el service
-    total = serializers.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        read_only=True
-    )
-    
-    fecha_esperada = serializers.DateTimeField(
-        read_only=True
-    )
+    total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    fecha_esperada = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Pedido
@@ -113,17 +94,22 @@ class PedidoSerializer(serializers.ModelSerializer):
         Validaciones adicionales a nivel de todo el pedido.
         """
         estado = attrs.get("estado")
-        
+
         # Si el pedido se marca como "enviado", debe tener fecha_envio
         if estado == "enviado" and not attrs.get("fecha_envio"):
             raise serializers.ValidationError(
-                {"fecha_envio": "Debe proporcionar fecha de envío para estado 'enviado'"}
+                {
+                    "fecha_envio": "Debe proporcionar fecha de envío para estado 'enviado'"
+                }
             )
 
         # Si el pedido se marca como "recibido", debe tener fecha_recepcion
         if estado == "recibido" and not attrs.get("fecha_recepcion"):
             raise serializers.ValidationError(
-                {"fecha_recepcion": "Debe proporcionar fecha de recepción para estado 'recibido'"}
+                {
+                    "fecha_recepcion": "Debe proporcionar fecha de recepción para estado 'recibido'"
+                }
             )
 
         return attrs
+
