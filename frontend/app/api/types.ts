@@ -143,3 +143,12 @@ export type Pedido = {
   total: string | number;
 };
 
+export type Prediccion = {
+  producto_id: number,
+  producto_nombre: string,
+  sku: string,
+  stock_actual: number,
+  prediccion_7d: number,
+  prediccion_14d: number,
+  prediccion_21d: number
+};

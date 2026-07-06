@@ -214,7 +214,6 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
       // setOpenHisotry(true);
     }
     
-    console.warn("Pinga");
     if (historyProductId !== null) {
       fetchData();
     }

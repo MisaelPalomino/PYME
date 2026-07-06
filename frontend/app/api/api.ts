@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Proveedor, Categoria, Producto, Movimiento, Dashboard, Pedido, HistorialProducto, Inventario } from '~/api/types';
+import type { Proveedor, Categoria, Producto, Movimiento, Dashboard, Pedido, HistorialProducto, Inventario, Prediccion } from '~/api/types';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -116,7 +116,7 @@ export const movimientosAPI = {
 
 export const iaAPI = {
   getAll: async () => {
-    const res = await api.get<any[]>('/ia/predicciones/');
+    const res = await api.get<Prediccion[]>('/ia/predicciones/');
     return { data: res.data };
   },
   generarTodos: async () => {

@@ -12,16 +12,18 @@ import type { Route } from "./+types/predicciones";
 import { useFetcher } from "react-router";
 import { iaAPI } from "~/api/api";
 import type { ActionFunctionArgs } from "react-router";
+import type { Prediccion } from '~/api/types';
 
 export async function loader() {
   const { data: predictions } = await iaAPI.getAll();
+  console.log(predictions);
   return { predictions };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
-  
+
   if (intent === "train") {
     try {
       await iaAPI.generarTodos();
@@ -33,20 +35,6 @@ export async function action({ request }: ActionFunctionArgs) {
   }
   return null;
 }
-
-type PredictionItem = {
-  producto_id: number;
-  producto_nombre: string;
-  sku: string;
-  stock_actual: number;
-  prediccion_7d: number | null;
-  prediccion_14d: number | null;
-  prediccion_21d: number | null;
-  mae: number | null;
-  mape: number | null;
-  lead_time_dias: number;
-  modelStatus: 'entrenado' | 'sin_datos' | 'desactualizado';
-};
 
 const modelStatusConfig = {
   entrenado: { label: 'Entrenado', icon: CheckCircle, color: 'text-green-500', badge: 'outline' as const },
@@ -60,7 +48,119 @@ const alertConfig = {
   none: { label: 'Normal', badge: 'outline' as const },
 };
 
-const columnHelper = createColumnHelper<PredictionItem>();
+const columnHelper = createColumnHelper<Prediccion>();
+
+const columns = [
+  columnHelper.accessor("producto_nombre", {
+    header: createSortableHeader("Producto"),
+    filterFn: (row, _, value) => {
+      const texto = value.toLowerCase();
+      return row.original.producto_nombre.toLowerCase().includes(texto) || row.original.sku.toLowerCase().includes(texto);
+    },
+    cell: (info) => (
+      <div className="px-4 py-3">
+        <p className="text-foreground font-medium">{info.getValue()}</p>
+        <p className="text-xs text-muted-foreground font-mono">{info.row.original.sku}</p>
+      </div>
+    )
+  }),
+  columnHelper.accessor("stock_actual", {
+    header: createSortableHeader("Stock"),
+    cell: (info) => (
+      <div className="px-4 py-3 text-center">
+        <span className={info.getValue() === 0 ? 'text-destructive font-semibold' : 'text-foreground'}>
+          {info.getValue()}
+        </span>
+      </div>
+    )
+  }),
+  columnHelper.accessor("prediccion_7d", {
+    header: createSortableHeader("Dem. 7d"),
+    cell: (info) => (
+      <div className="px-4 py-3 text-center text-foreground font-medium">
+        {info.getValue() !== null ? info.getValue() : '-'}
+      </div>
+    )
+  }),
+  columnHelper.accessor("prediccion_14d", {
+    header: createSortableHeader("Dem. 14d"),
+    cell: (info) => (
+      <div className="px-4 py-3 text-center text-foreground font-medium">
+        {info.getValue() !== null ? info.getValue() : '-'}
+      </div>
+    )
+  }),
+  columnHelper.accessor("prediccion_21d", {
+    header: createSortableHeader("Dem. 21d"),
+    cell: (info) => (
+      <div className="px-4 py-3 text-center text-foreground font-medium">
+        {info.getValue() !== null ? info.getValue() : '-'}
+      </div>
+    )
+  }),
+  columnHelper.display({
+    id: "daysUntilStockout",
+    header: "Días s/agot.",
+    cell: (info) => {
+      const p = info.row.original;
+      const demand7 = p.prediccion_7d !== null ? Number(p.prediccion_7d) : 0;
+      const dailyDemand = demand7 / 7;
+      const daysUntilStockout = dailyDemand > 0 ? Math.floor(p.stock_actual / dailyDemand) : 999;
+
+      return (
+        <div className="px-4 py-3 text-center font-medium">
+          <span className={p.stock_actual === 0 ? 'text-destructive' : daysUntilStockout <= 3 ? 'text-destructive' : daysUntilStockout <= 7 ? 'text-yellow-600' : 'text-foreground'}>
+            {p.stock_actual === 0 ? 'Agotado' : daysUntilStockout >= 999 ? 'Estable' : `${daysUntilStockout}d`}
+          </span>
+        </div>
+      );
+    }
+  }),
+  columnHelper.display({
+    id: "alertType",
+    header: "Alerta",
+    filterFn: (row, _, value) => {
+      const p = row.original;
+      const demand7 = p.prediccion_7d !== null ? Number(p.prediccion_7d) : 0;
+      const dailyDemand = demand7 / 7;
+      const daysUntilStockout = dailyDemand > 0 ? Math.floor(p.stock_actual / dailyDemand) : 999;
+
+      let alertType = 'none';
+      if (p.stock_actual === 0 || daysUntilStockout <= 3) {
+        alertType = 'critical';
+      } else if (daysUntilStockout <= 7) {
+        alertType = 'warning';
+      }
+
+      switch (value) {
+        case "Críticas (≤3 días)": return alertType === "critical";
+        case "Preventivas (4-7 días)": return alertType === "warning";
+        case "Sin alerta": return alertType === "none";
+        default: return true;
+      }
+    },
+    cell: (info) => {
+      const p = info.row.original;
+      const demand7 = p.prediccion_7d !== null ? Number(p.prediccion_7d) : 0;
+      const dailyDemand = demand7 / 7;
+      const daysUntilStockout = dailyDemand > 0 ? Math.floor(p.stock_actual / dailyDemand) : 999;
+
+      let alertType: 'critical' | 'warning' | 'none' = 'none';
+      if (p.stock_actual === 0 || daysUntilStockout <= 3) {
+        alertType = 'critical';
+      } else if (daysUntilStockout <= 7) {
+        alertType = 'warning';
+      }
+
+      const aConfig = alertConfig[alertType];
+      return (
+        <div className="px-4 py-3 text-center">
+          <Badge variant={aConfig.badge} className="text-xs">{aConfig.label}</Badge>
+        </div>
+      );
+    }
+  })
+];
 
 export default function Predictions({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
@@ -87,7 +187,7 @@ export default function Predictions({ loaderData }: Route.ComponentProps) {
       const demand7 = p.prediccion_7d !== null ? Number(p.prediccion_7d) : 0;
       const dailyDemand = demand7 / 7;
       const daysUntilStockout = dailyDemand > 0 ? Math.floor(p.stock_actual / dailyDemand) : 999;
-      
+
       if (p.stock_actual === 0 || daysUntilStockout <= 3) {
         criticalAlerts++;
       } else if (daysUntilStockout <= 7) {
@@ -111,117 +211,6 @@ export default function Predictions({ loaderData }: Route.ComponentProps) {
     { subject: 'Velocidad', A: 95 },
   ];
 
-  const columns = useMemo(() => [
-    columnHelper.accessor("producto_nombre", {
-      header: createSortableHeader("Producto"),
-      filterFn: (row, _, value) => {
-        const texto = value.toLowerCase();
-        return row.original.producto_nombre.toLowerCase().includes(texto) || row.original.sku.toLowerCase().includes(texto);
-      },
-      cell: (info) => (
-        <div className="px-4 py-3">
-          <p className="text-foreground font-medium">{info.getValue()}</p>
-          <p className="text-xs text-muted-foreground font-mono">{info.row.original.sku}</p>
-        </div>
-      )
-    }),
-    columnHelper.accessor("stock_actual", {
-      header: createSortableHeader("Stock"),
-      cell: (info) => (
-        <div className="px-4 py-3 text-center">
-          <span className={info.getValue() === 0 ? 'text-destructive font-semibold' : 'text-foreground'}>
-            {info.getValue()}
-          </span>
-        </div>
-      )
-    }),
-    columnHelper.accessor("prediccion_7d", {
-      header: createSortableHeader("Dem. 7d"),
-      cell: (info) => (
-        <div className="px-4 py-3 text-center text-foreground font-medium">
-          {info.getValue() !== null ? info.getValue() : '-'}
-        </div>
-      )
-    }),
-    columnHelper.accessor("prediccion_14d", {
-      header: createSortableHeader("Dem. 14d"),
-      cell: (info) => (
-        <div className="px-4 py-3 text-center text-foreground font-medium">
-          {info.getValue() !== null ? info.getValue() : '-'}
-        </div>
-      )
-    }),
-    columnHelper.accessor("prediccion_21d", {
-      header: createSortableHeader("Dem. 21d"),
-      cell: (info) => (
-        <div className="px-4 py-3 text-center text-foreground font-medium">
-          {info.getValue() !== null ? info.getValue() : '-'}
-        </div>
-      )
-    }),
-    columnHelper.display({
-      id: "daysUntilStockout",
-      header: "Días s/agot.",
-      cell: (info) => {
-        const p = info.row.original;
-        const demand7 = p.prediccion_7d !== null ? Number(p.prediccion_7d) : 0;
-        const dailyDemand = demand7 / 7;
-        const daysUntilStockout = dailyDemand > 0 ? Math.floor(p.stock_actual / dailyDemand) : 999;
-        
-        return (
-          <div className="px-4 py-3 text-center font-medium">
-            <span className={p.stock_actual === 0 ? 'text-destructive' : daysUntilStockout <= 3 ? 'text-destructive' : daysUntilStockout <= 7 ? 'text-yellow-600' : 'text-foreground'}>
-              {p.stock_actual === 0 ? 'Agotado' : daysUntilStockout >= 999 ? 'Estable' : `${daysUntilStockout}d`}
-            </span>
-          </div>
-        );
-      }
-    }),
-    columnHelper.display({
-      id: "alertType",
-      header: "Alerta",
-      filterFn: (row, _, value) => {
-        const p = row.original;
-        const demand7 = p.prediccion_7d !== null ? Number(p.prediccion_7d) : 0;
-        const dailyDemand = demand7 / 7;
-        const daysUntilStockout = dailyDemand > 0 ? Math.floor(p.stock_actual / dailyDemand) : 999;
-        
-        let alertType = 'none';
-        if (p.stock_actual === 0 || daysUntilStockout <= 3) {
-          alertType = 'critical';
-        } else if (daysUntilStockout <= 7) {
-          alertType = 'warning';
-        }
-
-        switch (value) {
-          case "Críticas (≤3 días)": return alertType === "critical";
-          case "Preventivas (4-7 días)": return alertType === "warning";
-          case "Sin alerta": return alertType === "none";
-          default: return true;
-        }
-      },
-      cell: (info) => {
-        const p = info.row.original;
-        const demand7 = p.prediccion_7d !== null ? Number(p.prediccion_7d) : 0;
-        const dailyDemand = demand7 / 7;
-        const daysUntilStockout = dailyDemand > 0 ? Math.floor(p.stock_actual / dailyDemand) : 999;
-        
-        let alertType: 'critical' | 'warning' | 'none' = 'none';
-        if (p.stock_actual === 0 || daysUntilStockout <= 3) {
-          alertType = 'critical';
-        } else if (daysUntilStockout <= 7) {
-          alertType = 'warning';
-        }
-
-        const aConfig = alertConfig[alertType];
-        return (
-          <div className="px-4 py-3 text-center">
-            <Badge variant={aConfig.badge} className="text-xs">{aConfig.label}</Badge>
-          </div>
-        );
-      }
-    })
-  ], []);
 
   const filters: Filter[] = [
     {

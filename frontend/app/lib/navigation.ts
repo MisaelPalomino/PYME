@@ -20,6 +20,7 @@ type NavigationItem = {
 };
 
 // Sirve para mostrar (o no) secciones del sistema.
+// @see frontend/app/components/Sidebar 
 export const navigation: NavigationItem[] = [
   {
     url: "/",
