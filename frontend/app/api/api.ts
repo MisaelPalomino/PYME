@@ -68,6 +68,11 @@ export const proveedoresAPI = {
   },
 };
 
+export const inventarioAPI = {
+  getAll: async () => await api.get<Inventario>("/inventario/stock/"),
+  getHistory: async (id_producto: number) => await api.get<HistorialProducto>(`/inventario/historial/${id_producto}`),
+};
+
 export const movimientosAPI = {
   getAll: async (params: Record<string, any> = {}) => {
     const res = await api.get<any[]>('/movimientos/', { params });

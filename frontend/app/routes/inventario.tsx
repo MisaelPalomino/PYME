@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/u
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { createColumnHelper } from '@tanstack/react-table';
-import type { Producto } from '~/api/types';
+import type { HistorialProducto, Producto } from '~/api/types';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/inventario";
 import { productosAPI, categoriasAPI, movimientosAPI } from "~/api/api";
@@ -67,10 +67,19 @@ export async function loader({ request }: Route.LoaderArgs) {
     };
   });
 
+  const totals = {
+    total: productos.length,
+    critical: productos.filter(p => p.estado === 'critical').length,
+    warning: productos.filter(p => p.estado === 'warning').length,
+    normal: productos.filter(p => p.estado === 'normal').length,
+  };
+
+
   return {
     productos,
     categorias,
     filters,
+    totals,
   };
 }
 
@@ -196,6 +205,27 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
     })
   ];
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await inventarioAPI.getHistory(historyProductId!);
+      
+      setProductHistory(result.data);
+      setLoadingHistory(false);
+      setOpenHistory(true);
+    }
+    
+    console.warn("Pinga");
+    if (historyProductId !== null) {
+      fetchData();
+    }
+  }, [historyProductId]);
+
+  function handleHistoryClose() {
+    setLoadingHistory(true);
+    setHistoryProductId(null);
+    setOpenHistory(false);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -208,10 +238,10 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Productos', value: totals.total, color: 'text-foreground' },
-          { label: 'Stock Crítico', value: totals.critical, color: 'text-destructive' },
-          { label: 'Stock Bajo', value: totals.warning, color: 'text-yellow-600' },
-          { label: 'Stock Normal', value: totals.normal, color: 'text-green-600' },
+          { label: 'Total Productos', value: loaderData.totals.total, color: 'text-foreground' },
+          { label: 'Stock Crítico', value: loaderData.totals.critical, color: 'text-destructive' },
+          { label: 'Stock Bajo', value: loaderData.totals.warning, color: 'text-yellow-600' },
+          { label: 'Stock Normal', value: loaderData.totals.normal, color: 'text-green-600' },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="pt-5 pb-4">
@@ -247,18 +277,18 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {productHistory.map(m => (
-                    <tr key={m.id} className="border-b border-border/50">
+                  {productHistory?.historial.map(m => (
+                    <tr className="border-b border-border/50">
                       <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">
                         {format(m.fecha, 'dd/MM/yy HH:mm', { locale: es })}
                       </td>
                       <td className="py-2 pr-3 text-center">
-                        <Badge variant={m.tipo_movimiento === 'Entrada' ? 'outline' : 'secondary'} className="text-xs">
+                        <Badge variant={m.tipo_movimiento === "entrada" ? 'outline' : 'secondary'} className="text-xs">
                           {m.tipo_movimiento}
                         </Badge>
                       </td>
-                      <td className={`py-2 pr-3 text-center font-medium ${m.tipo_movimiento === 'Entrada' ? 'text-green-600' : 'text-red-600'}`}>
-                        {m.tipo_movimiento === 'Entrada' ? '+' : '-'}{m.cantidad}
+                      <td className={`py-2 pr-3 text-center font-medium ${m.tipo_movimiento === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>
+                        {m.tipo_movimiento === 'entrada' ? '+' : '-'}{m.cantidad}
                       </td>
                       <td className="py-2 text-muted-foreground">{m.observaciones}</td>
                     </tr>
