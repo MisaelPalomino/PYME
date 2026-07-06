@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
 import { CategoriaSchema } from '~/lib/schemas/categoria.schema';
+import { toast } from 'sonner';
 
 export async function loader() {
   const response = await categoriasAPI.getAll();
@@ -41,7 +42,7 @@ const filters: Filter[] = [
 export default function Categorias({ loaderData }: Route.ComponentProps) {
   const { user } = useAuth();
   const fetcher = useFetcher();
-  
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ nombre: '', descripcion: '' });
@@ -83,10 +84,18 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
 
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && (fetcher.data as any).success) {
-      setIsDialogOpen(false);
-      resetForm();
+    if (fetcher.state !== "idle" || !fetcher.data) return;
+    setIsDialogOpen(false);
+    resetForm();
+    console.warn(fetcher.data);
+
+    if (fetcher.data.success) {
+      toast.success("¡Se guardó la categoría correctamente!");
     }
+    /* TODO: Parece que alguien hizo que se muestre directamente
+    else {
+      toast.error(fetcher.data.error);
+    }*/
   }, [fetcher.state, fetcher.data]);
 
   const errors = fetcher.data && (fetcher.data as any).errors;
@@ -113,11 +122,13 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
         </div>
       )}
 
-      {!isAdmin && (
+      {/* TODO:
+        !isAdmin && (
         <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
           <strong>Modo lectura:</strong> Solo puedes ver las categorías. Los cambios solo están disponibles para el administrador.
         </div>
-      )}
+      )
+      */}
 
       <TableCard columns={columns} data={loaderData.categorias} filters={filters}>
         {(item) => (
@@ -231,7 +242,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Validamos con el esquema de Zod
   const result = CategoriaSchema.safeParse(submission);
-  
+
   if (!result.success) {
     return { errors: result.error.flatten().fieldErrors };
   }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Proveedor, Categoria, Producto, Movimiento, Dashboard } from '~/api/types';
+import { type Proveedor, type Categoria, type Producto, type Movimiento, type Dashboard, type Inventario, type HistorialProducto } from '~/api/types';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -68,9 +68,14 @@ export const proveedoresAPI = {
   },
 };
 
+export const inventarioAPI = {
+  getAll: async () => await api.get<Inventario>("/inventario/stock/"),
+  getHistory: async (id_producto: number) => await api.get<HistorialProducto>(`/inventario/historial/${id_producto}`),
+};
+
 export const movimientosAPI = {
   getAll: async (params: Record<string, any> = {}) => {
-    const res = await api.get<any[]>('/inventario/movimientos/', { params });
+    const res = await api.get<any[]>('/movimientos/', { params });
     const mapped = res.data.map(m => ({
       id: m.id_movimiento,
       producto_nombre: m.producto_nombre || '',
@@ -90,7 +95,7 @@ export const movimientosAPI = {
       id_producto: Number(data.id_producto),
       id_usuario: Number(data.id_usuario),
     };
-    return await api.post('/inventario/movimientos/', backendData);
+    return await api.post('/movimientos/', backendData);
   }
 };
 

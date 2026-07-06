@@ -94,3 +94,28 @@ export type Dashboard = {
     producto_nombre: string
   }[]
 };
+
+export type InventarioProducto = {
+  id_producto: number,
+  nombre: string,
+  stock_actual: number,
+  estado_stock: "Normal" | "Advertencia" | "Crítico"
+};
+
+export type HistorialProducto = {
+  id_producto: number,
+  historial: {
+    fecha: Date,
+    tipo_movimiento: "salida" | "entrada",
+    cantidad: number,
+    observaciones: string,
+  }[]
+};
+
+export type Inventario = {
+  total: number,
+  stock_agotado: number,
+  stock_critico: number,
+  stock_normal: number,
+  productos: InventarioProducto[]
+};
