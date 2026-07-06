@@ -2,17 +2,19 @@ import { useState, useEffect, useMemo } from 'react';
 import { ProductoSchema } from '~/lib/schemas/producto.schema';
 import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
-import { productosAPI, categoriasAPI, proveedoresAPI } from '~/api/api';
+import { productosAPI, categoriasAPI, proveedoresAPI, type ProductoDTO } from '~/api/api';
 import type { Categoria, Producto } from '~/api/types';
 import { Button } from '~/components/ui/button';
 import type { Route } from "./+types/productos";
 import { Edit2, Plus, Trash2 } from 'lucide-react';
 import { createColumnHelper } from "@tanstack/react-table";
-import { createSortableHeader, TableList, type Filter} from '~/components/Table';
+import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
 import { toast } from 'sonner';
+import axios from 'axios';
+import { formatApiError } from '~/lib/utils';
 
 type ProductoFormData = {
   nombre: string;
@@ -127,6 +129,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     columnHelper.accessor("nombre", {
       header: createSortableHeader("Producto / SKU"),
       enableSorting: true,
+      size: NaN,
       enableColumnFilter: true,
 
       filterFn: (row, _, value) => {
@@ -143,16 +146,30 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
         </div>
       )
     }),
+    columnHelper.display({
+      header: "Descripción",
+      size: NaN,
+      cell: (info) => (
+        <div className="px-4 py-3 text-muted-foreground">{info.row.original.descripcion}</div>
+      )
+    }),
+    columnHelper.display({
+      header: "Proveedor",
+      size: 0,
+      cell: (info) => (
+        <div className="px-4 py-3 text-muted-foreground">{info.row.original.proveedor_nombre}</div>
+      )
+    }),
     columnHelper.accessor("categoria_nombre", {
       header: createSortableHeader("Categoría"),
-      enableSorting: true,
-      enableColumnFilter: true,
+      size: 0,
       cell: (info) => (
         <div className="px-4 py-3 text-muted-foreground">{info.getValue()}</div>
       )
     }),
     columnHelper.accessor("stock_actual", {
       header: createSortableHeader("Stock"),
+      size: 0,
       cell: (info) => {
         const stock = info.getValue();
         const { stock_actual, stock_maximo, stock_minimo } = info.row.original;
@@ -175,6 +192,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     }),
     columnHelper.display({
       id: "minmax",
+      size: 100,
       header: "Min / Max",
       cell: (info) => {
         const p = info.row.original;
@@ -251,7 +269,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
       )}
 
       {/* Table */}
-      <TableList data={loaderData.productos} columns={columns} filters={filters} defaultSort={[{id: "nombre", desc: false}]} />
+      <TableList data={loaderData.productos} columns={columns} filters={filters} defaultSort={[{ id: "nombre", desc: false }]} />
 
       {/* Dialogo Formulario Producto */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -397,9 +415,10 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="descripcion">Descripción</Label>
+                <Label htmlFor="descripcion">Descripción *</Label>
                 <textarea
                   id="descripcion"
+                  required
                   name="descripcion"
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm"
                   rows={3}
@@ -439,7 +458,6 @@ export async function action({ request }: ActionFunctionArgs) {
       await productosAPI.delete(id);
       return { success: true };
     } catch (error) {
-      console.error(error);
       return { error: "Error al eliminar el producto" };
     }
   }
@@ -458,11 +476,13 @@ export async function action({ request }: ActionFunctionArgs) {
     if (editId) {
       await productosAPI.update(editId, result.data);
     } else {
-      await productosAPI.create(result.data);
+      await productosAPI.create(result.data as ProductoDTO);
     }
     return { success: true };
   } catch (error) {
-    console.error(error);
+    if (axios.isAxiosError(error)) {
+      return { error: formatApiError(error.response?.data) };
+    }
     return { error: "Error al comunicarse con el servidor" };
   }
 }

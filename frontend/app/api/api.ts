@@ -14,6 +14,8 @@ export const dashboardAPI = {
   getAll: async () => await api.get<Dashboard>("/dashboard/dashboard")
 }
 
+export type ProductoDTO = Omit<Producto, "id_producto" | "estado" | "proveedor_nombre">;
+
 export const productosAPI = {
   getAll: async (params: Record<string, any> = {}) => {
     return await api.get<Producto[]>('/core/productos/', { params });
@@ -21,8 +23,8 @@ export const productosAPI = {
   getOne: async (id: number) => {
     return await api.get<Producto>(`/core/productos/${id}/`);
   },
-  create: async (data: any) => {
-    return await api.post<Producto>('/core/productos/', data);
+  create: async (data: ProductoDTO) => {
+    return await api.post('/core/productos/', data);
   },
   update: async (id: number, data: any) => {
     return await api.put<Producto>(`/core/productos/${id}/`, data);
