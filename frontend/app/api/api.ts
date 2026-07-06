@@ -61,10 +61,10 @@ export const proveedoresAPI = {
     return await api.post('/proveedores/proveedores/', data);
   },
   update: async (id: number, data: any) => {
-    return await api.put(`/proveedores/${id}/`, data);
+    return await api.put(`/proveedores/proveedores/${id}/`, data);
   },
   delete: async (id: number) => {
-    return await api.delete(`/proveedores/${id}/`);
+    return await api.delete(`/proveedores/proveedores/${id}/`);
   },
 };
 
