@@ -3,15 +3,16 @@ import { ProductoSchema } from '~/lib/schemas/producto.schema';
 import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
 import { productosAPI, categoriasAPI, proveedoresAPI } from '~/api/api';
-import type { Producto } from '~/api/types';
+import type { Categoria, Producto } from '~/api/types';
 import { Button } from '~/components/ui/button';
 import type { Route } from "./+types/productos";
 import { Edit2, Plus, Trash2 } from 'lucide-react';
 import { createColumnHelper } from "@tanstack/react-table";
-import { createSortableHeader, TableList, type Filter } from '~/components/Table';
+import { createSortableHeader, TableList, type Filter} from '~/components/Table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
+import { toast } from 'sonner';
 
 type ProductoFormData = {
   nombre: string;
@@ -108,10 +109,18 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
 
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && (fetcher.data as any).success) {
-      setIsDialogOpen(false);
-      resetForm();
+    if (fetcher.state !== "idle" || !fetcher.data) return;
+    setIsDialogOpen(false);
+    resetForm();
+    console.warn(fetcher.data);
+
+    if (fetcher.data.success) {
+      toast.success("¡Se guardó el producto correctamente!");
     }
+    /* TODO: Parece que alguien hizo que se muestre directamente
+    else {
+      toast.error(fetcher.data.error);
+    }*/
   }, [fetcher.state, fetcher.data]);
 
   const columns = useMemo(() => [
@@ -242,173 +251,174 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
       )}
 
       {/* Table */}
-      <TableList data={loaderData.productos} columns={columns} filters={filters}/>
+      <TableList data={loaderData.productos} columns={columns} filters={filters} defaultSort={[{id: "nombre", desc: false}]} />
 
       {/* Dialogo Formulario Producto */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         setIsDialogOpen(open);
         if (!open) resetForm();
       }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>
               {editId ? 'Editar Producto' : 'Nuevo Producto'}
             </DialogTitle>
           </DialogHeader>
+          <div className="overflow-y-auto overflow-x-hidden max-h-[calc(90vh-8rem)] px-2">
+            <fetcher.Form method="post" className="space-y-4">
+              {editId && <input type="hidden" name="editId" value={editId} />}
+              <input type="hidden" name="intent" value={editId ? "update" : "create"} />
 
-          <fetcher.Form method="post" className="space-y-4">
-            {editId && <input type="hidden" name="editId" value={editId} />}
-            <input type="hidden" name="intent" value={editId ? "update" : "create"} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="nombre">Nombre *</Label>
+                  <Input
+                    id="nombre"
+                    name="nombre"
+                    type="text"
+                    required
+                    value={formData.nombre}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  />
+                  {errors?.nombre && <p className="text-destructive text-xs">{errors.nombre[0]}</p>}
+                </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="sku">SKU *</Label>
+                  <Input
+                    id="sku"
+                    name="sku"
+                    type="text"
+                    required
+                    value={formData.sku}
+                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                  />
+                  {errors?.sku && <p className="text-destructive text-xs">{errors.sku[0]}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="precio">Precio * (S/)</Label>
+                  <Input
+                    id="precio"
+                    name="precio"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    value={formData.precio}
+                    onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+                  />
+                  {errors?.precio && <p className="text-destructive text-xs">{errors.precio[0]}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="id_categoria">Categoría *</Label>
+                  <select
+                    id="id_categoria"
+                    name="id_categoria"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm h-10"
+                    required
+                    value={formData.id_categoria}
+                    onChange={(e) => setFormData({ ...formData, id_categoria: e.target.value })}
+                  >
+                    <option value="">Seleccionar categoría...</option>
+                    {loaderData.categorias.map((cat) => (
+                      <option key={cat.id_categoria} value={cat.id_categoria}>
+                        {cat.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  {errors?.id_categoria && <p className="text-destructive text-xs">{errors.id_categoria[0]}</p>}
+                </div>
+
+                <div className="space-y-1 md:col-span-2">
+                  <Label htmlFor="id_proveedor_principal">Proveedor Principal *</Label>
+                  <select
+                    id="id_proveedor_principal"
+                    name="id_proveedor_principal"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm h-10"
+                    required
+                    value={formData.id_proveedor_principal}
+                    onChange={(e) => setFormData({ ...formData, id_proveedor_principal: e.target.value })}
+                  >
+                    <option value="">Seleccionar proveedor...</option>
+                    {loaderData.proveedores.map((prov) => (
+                      <option key={prov.id_proveedor} value={prov.id_proveedor}>
+                        {prov.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  {errors?.id_proveedor_principal && <p className="text-destructive text-xs">{errors.id_proveedor_principal[0]}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="stock_actual">Stock Actual *</Label>
+                  <Input
+                    id="stock_actual"
+                    name="stock_actual"
+                    type="number"
+                    min="0"
+                    required
+                    value={formData.stock_actual}
+                    onChange={(e) => setFormData({ ...formData, stock_actual: e.target.value })}
+                  />
+                  {errors?.stock_actual && <p className="text-destructive text-xs">{errors.stock_actual[0]}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="stock_minimo">Stock Mínimo *</Label>
+                  <Input
+                    id="stock_minimo"
+                    name="stock_minimo"
+                    type="number"
+                    min="0"
+                    required
+                    value={formData.stock_minimo}
+                    onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })}
+                  />
+                  {errors?.stock_minimo && <p className="text-destructive text-xs">{errors.stock_minimo[0]}</p>}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="stock_maximo">Stock Máximo *</Label>
+                  <Input
+                    id="stock_maximo"
+                    name="stock_maximo"
+                    type="number"
+                    min="0"
+                    required
+                    value={formData.stock_maximo}
+                    onChange={(e) => setFormData({ ...formData, stock_maximo: e.target.value })}
+                  />
+                  {errors?.stock_maximo && <p className="text-destructive text-xs">{errors.stock_maximo[0]}</p>}
+                </div>
+              </div>
+
               <div className="space-y-1">
-                <Label htmlFor="nombre">Nombre *</Label>
-                <Input
-                  id="nombre"
-                  name="nombre"
-                  type="text"
-                  required
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                <Label htmlFor="descripcion">Descripción</Label>
+                <textarea
+                  id="descripcion"
+                  name="descripcion"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm"
+                  rows={3}
+                  value={formData.descripcion}
+                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                 />
-                {errors?.nombre && <p className="text-destructive text-xs">{errors.nombre[0]}</p>}
+                {errors?.descripcion && <p className="text-destructive text-xs">{errors.descripcion[0]}</p>}
               </div>
 
-              <div className="space-y-1">
-                <Label htmlFor="sku">SKU *</Label>
-                <Input
-                  id="sku"
-                  name="sku"
-                  type="text"
-                  required
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                />
-                {errors?.sku && <p className="text-destructive text-xs">{errors.sku[0]}</p>}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="precio">Precio * (S/)</Label>
-                <Input
-                  id="precio"
-                  name="precio"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  required
-                  value={formData.precio}
-                  onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
-                />
-                {errors?.precio && <p className="text-destructive text-xs">{errors.precio[0]}</p>}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="id_categoria">Categoría *</Label>
-                <select
-                  id="id_categoria"
-                  name="id_categoria"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm h-10"
-                  required
-                  value={formData.id_categoria}
-                  onChange={(e) => setFormData({ ...formData, id_categoria: e.target.value })}
-                >
-                  <option value="">Seleccionar categoría...</option>
-                  {loaderData.categorias.map((cat) => (
-                    <option key={cat.id_categoria} value={cat.id_categoria}>
-                      {cat.nombre}
-                    </option>
-                  ))}
-                </select>
-                {errors?.id_categoria && <p className="text-destructive text-xs">{errors.id_categoria[0]}</p>}
-              </div>
-
-              <div className="space-y-1 md:col-span-2">
-                <Label htmlFor="id_proveedor_principal">Proveedor Principal *</Label>
-                <select
-                  id="id_proveedor_principal"
-                  name="id_proveedor_principal"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm h-10"
-                  required
-                  value={formData.id_proveedor_principal}
-                  onChange={(e) => setFormData({ ...formData, id_proveedor_principal: e.target.value })}
-                >
-                  <option value="">Seleccionar proveedor...</option>
-                  {loaderData.proveedores.map((prov) => (
-                    <option key={prov.id_proveedor} value={prov.id_proveedor}>
-                      {prov.nombre}
-                    </option>
-                  ))}
-                </select>
-                {errors?.id_proveedor_principal && <p className="text-destructive text-xs">{errors.id_proveedor_principal[0]}</p>}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="stock_actual">Stock Actual *</Label>
-                <Input
-                  id="stock_actual"
-                  name="stock_actual"
-                  type="number"
-                  min="0"
-                  required
-                  value={formData.stock_actual}
-                  onChange={(e) => setFormData({ ...formData, stock_actual: e.target.value })}
-                />
-                {errors?.stock_actual && <p className="text-destructive text-xs">{errors.stock_actual[0]}</p>}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="stock_minimo">Stock Mínimo *</Label>
-                <Input
-                  id="stock_minimo"
-                  name="stock_minimo"
-                  type="number"
-                  min="0"
-                  required
-                  value={formData.stock_minimo}
-                  onChange={(e) => setFormData({ ...formData, stock_minimo: e.target.value })}
-                />
-                {errors?.stock_minimo && <p className="text-destructive text-xs">{errors.stock_minimo[0]}</p>}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="stock_maximo">Stock Máximo *</Label>
-                <Input
-                  id="stock_maximo"
-                  name="stock_maximo"
-                  type="number"
-                  min="0"
-                  required
-                  value={formData.stock_maximo}
-                  onChange={(e) => setFormData({ ...formData, stock_maximo: e.target.value })}
-                />
-                {errors?.stock_maximo && <p className="text-destructive text-xs">{errors.stock_maximo[0]}</p>}
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="descripcion">Descripción</Label>
-              <textarea
-                id="descripcion"
-                name="descripcion"
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground text-sm"
-                rows={3}
-                value={formData.descripcion}
-                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-              />
-              {errors?.descripcion && <p className="text-destructive text-xs">{errors.descripcion[0]}</p>}
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={fetcher.state !== 'idle'}>
-                {fetcher.state !== 'idle' ? 'Guardando...' : editId ? 'Actualizar' : 'Guardar'}
-              </Button>
-            </DialogFooter>
-          </fetcher.Form>
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={fetcher.state !== 'idle'}>
+                  {fetcher.state !== 'idle' ? 'Guardando...' : editId ? 'Actualizar' : 'Guardar'}
+                </Button>
+              </DialogFooter>
+            </fetcher.Form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -437,7 +447,7 @@ export async function action({ request }: ActionFunctionArgs) {
   // De lo contrario, es guardar/actualizar
   // Validamos con el esquema de Zod
   const result = ProductoSchema.safeParse(submission);
-  
+
   if (!result.success) {
     // Retornamos los errores para que el formulario los muestre
     return { errors: result.error.flatten().fieldErrors };
