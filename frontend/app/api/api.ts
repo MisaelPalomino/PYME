@@ -11,7 +11,7 @@ const api = axios.create({
 });
 
 export const dashboardAPI = {
-  getAll: async () => await api.get<Dashboard>("/dashboard/dashboard")
+  getAll: async () => await api.get<Dashboard>("/dashboard/dashboard/")
 }
 
 export const productosAPI = {
@@ -55,7 +55,13 @@ export const proveedoresAPI = {
     return await api.get<Proveedor[]>('/proveedores/proveedores/');
   },
   getOne: async (id: number) => {
-    return await api.get<any>(`/proveedores/${id}/`);
+    try {
+      return await api.get<any>(`/proveedores/proveedor/${id}/`);
+    } catch (e) {
+      const prov = localProveedores.find(p => p.id_proveedor === id);
+      if (!prov) throw new Error("Proveedor no encontrado.");
+      return { data: prov };
+    }
   },
   create: async (data: any) => {
     return await api.post('/proveedores/proveedores/', data);
@@ -103,3 +109,5 @@ export const iaAPI = {
     return await api.post('/ia/predicciones/generar-todos/');
   }
 };
+
+export default api;

@@ -1,0 +1,21 @@
+                                             Table "public.usuario"
+     Column     |           Type           | Collation | Nullable |                   Default                   
+----------------+--------------------------+-----------+----------+---------------------------------------------
+ id_usuario     | integer                  |           | not null | nextval('usuario_id_usuario_seq'::regclass)
+ username       | character varying(255)   |           | not null | 
+ password       | character varying(255)   |           | not null | 
+ nombre         | character varying(255)   |           | not null | 
+ email          | character varying(255)   |           | not null | 
+ activo         | boolean                  |           | not null | 
+ fecha_creacion | timestamp with time zone |           | not null | 
+ rol            | user_role                |           | not null | 
+ last_login     | timestamp with time zone |           |          | 
+Indexes:
+    "usuario_pkey" PRIMARY KEY, btree (id_usuario)
+Referenced by:
+    TABLE "django_admin_log" CONSTRAINT "django_admin_log_user_id_c564eba6_fk_usuario_id_usuario" FOREIGN KEY (user_id) REFERENCES usuario(id_usuario) DEFERRABLE INITIALLY DEFERRED
+    TABLE "movimiento_inventario" CONSTRAINT "movimiento_inventario_fk6" FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
+    TABLE "notificacion" CONSTRAINT "notificacion_fk1" FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
+    TABLE "pedido" CONSTRAINT "pedido_fk4" FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
+    TABLE "token_blacklist_outstandingtoken" CONSTRAINT "token_blacklist_outs_user_id_83bc629a_fk_usuario_i" FOREIGN KEY (user_id) REFERENCES usuario(id_usuario) DEFERRABLE INITIALLY DEFERRED
+

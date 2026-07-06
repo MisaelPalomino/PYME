@@ -1,63 +1,27 @@
 import {
-    ArrowLeftRight,
   LayoutDashboard,
   Package,
   Tag,
-  Truck,
+  ArrowLeftRight,
   Warehouse,
   Brain,
-  type LucideIcon
+  Truck,
+  type LucideIcon,
 } from "lucide-react";
 
-type NavigationItem = {
-  url: string
-  path: string,
-  label: string,
-  icon: LucideIcon
-};
+export interface NavItem {
+  url: string;
+  icon: LucideIcon;
+  label: string;
+  end?: boolean;
+}
 
-// Sirve para mostrar (o no) secciones del sistema.
-export const navigation: NavigationItem[] = [
-  {
-    url: "/",
-    path: "routes/home.tsx",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    url: "productos",
-    path: "routes/productos.tsx",
-    label: "Productos",
-    icon: Package,
-  },
-  {
-    url: "categorias",
-    path: "routes/categorias.tsx",
-    label: "Categorías",
-    icon: Tag,
-  },
-  {
-    url: "proveedores",
-    path: "routes/proveedores.tsx",
-    label: "Proveedores",
-    icon: Truck,
-  },
-  {
-    url: "movimientos",
-    path: "routes/movimientos.tsx",
-    label: "Movimientos",
-    icon: ArrowLeftRight,
-  },
-  {
-    url: "inventario",
-    path: "routes/inventario.tsx",
-    label: "Inventario",
-    icon: Warehouse,
-  },
-  {
-    url: "predicciones",
-    path: "routes/predicciones.tsx",
-    label: "Predicciones",
-    icon: Brain,
-  }
+export const navigation: NavItem[] = [
+  { url: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { url: "/productos", icon: Package, label: "Productos" },
+  { url: "/categorias", icon: Tag, label: "Categorías" },
+  { url: "/proveedores", icon: Truck, label: "Proveedores" },
+  { url: "/movimientos", icon: ArrowLeftRight, label: "Movimientos" },
+  { url: "/inventario", icon: Warehouse, label: "Inventario" },
+  { url: "/predicciones", icon: Brain, label: "Predicciones" },
 ];

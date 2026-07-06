@@ -1,3 +1,5 @@
+from urllib import request
+
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -34,14 +36,15 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh_token = request.data.get('refresh')
-        if not refresh_token:
-            return Response(
-                {"detail": "Se requiere el campo 'refresh'."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        AuthService.logout(refresh_token)
-        return Response({"detail": "Sesión cerrada correctamente."}, status=status.HTTP_200_OK)
+        serializer = LoginSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            print("❌ LOGIN ERROR:", serializer.errors)
+            return Response(serializer.errors, status=400)
+
+        user = serializer.validated_data['user']
+        data = AuthService.login(user)
+        return Response(data)
 
 
 class UsuarioViewSet(viewsets.ViewSet):
@@ -56,9 +59,12 @@ class UsuarioViewSet(viewsets.ViewSet):
     """
 
     def get_permissions(self):
-        # cambiar_password lo puede hacer cualquier usuario autenticado sobre sí mismo
-        if self.action == 'cambiar_password':
+        if self.action == "create":
+            return [AllowAny()]
+
+        if self.action == "cambiar_password":
             return [IsAuthenticated()]
+
         return [IsAuthenticated()]
 
     def list(self, request):
@@ -72,10 +78,18 @@ class UsuarioViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
     def create(self, request):
-        serializer = RegistroUsuarioSerializer(data=request.data)
+        data = request.data.copy()
+        data["rol"] = "Comprador"
+
+        serializer = RegistroUsuarioSerializer(data=data)
         serializer.is_valid(raise_exception=True)
+
         usuario = UsuarioService.crear(serializer)
-        return Response(UsuarioSerializer(usuario).data, status=status.HTTP_201_CREATED)
+
+        return Response(
+            UsuarioSerializer(usuario).data,
+            status=status.HTTP_201_CREATED
+        )
 
     def update(self, request, pk=None):
         usuario = UsuarioService.obtener(pk)

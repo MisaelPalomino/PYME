@@ -29,21 +29,32 @@ type ProductoFormData = {
 const columnHelper = createColumnHelper<Producto>();
 
 export async function loader() {
-  const [
-    { data: productos },
-    { data: categorias },
-    { data: proveedores }
-  ] = await Promise.all([
-    productosAPI.getAll(),
-    categoriasAPI.getAll(),
-    proveedoresAPI.getAll()
-  ]);
+  try {
+    const [productosRes, categoriasRes, proveedoresRes] = await Promise.all([
+      productosAPI.getAll(),
+      categoriasAPI.getAll(),
+      proveedoresAPI.getAll()
+    ]);
 
-  return {
-    productos,
-    categorias,
-    proveedores
-  };
+    // Asegurar que los datos sean arrays
+    const productos = Array.isArray(productosRes?.data) ? productosRes.data : [];
+    const categorias = Array.isArray(categoriasRes?.data) ? categoriasRes.data : [];
+    const proveedores = Array.isArray(proveedoresRes?.data) ? proveedoresRes.data : [];
+
+    return {
+      productos,
+      categorias,
+      proveedores
+    };
+  } catch (error) {
+    console.error('Error en loader de productos:', error);
+    // Devolver arrays vacíos en caso de error
+    return {
+      productos: [],
+      categorias: [],
+      proveedores: []
+    };
+  }
 }
 
 export default function Productos({ loaderData }: Route.ComponentProps) {
