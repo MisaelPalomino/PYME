@@ -1,6 +1,5 @@
 import axios from 'axios';
 import type { Proveedor, Categoria, Producto, Movimiento, Dashboard } from '~/api/types';
-import { mockProductos, mockCategorias, mockMovimientos } from '~/dataMock';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -11,388 +10,96 @@ const api = axios.create({
   },
 });
 
-// Bases de datos simuladas en memoria para cuando el backend está fuera de línea (offline fallback)
-let localProductos = [...mockProductos];
-let localCategorias = [...mockCategorias];
-let localMovimientos = [...mockMovimientos];
-
 export const dashboardAPI = {
   getAll: async () => await api.get<Dashboard>("/dashboard/dashboard")
 }
 
 export const productosAPI = {
   getAll: async (params: Record<string, any> = {}) => {
-    try {
-      return await api.get<Producto[]>('/core/productos/', { params });
-    } catch (e) {
-      console.warn("[API Fallback] Backend offline. Usando base de datos simulada para Productos.");
-      return { data: localProductos };
-    }
+    return await api.get<Producto[]>('/core/productos/', { params });
   },
   getOne: async (id: number) => {
-    try {
-      return await api.get<Producto>(`/core/productos/${id}/`);
-    } catch (e) {
-      const prod = localProductos.find(p => p.id_producto === id);
-      if (!prod) throw new Error("Producto no encontrado.");
-      return { data: prod };
-    }
+    return await api.get<Producto>(`/core/productos/${id}/`);
   },
   create: async (data: any) => {
-    try {
-      return await api.post<Producto>('/core/productos/', data);
-    } catch (e) {
-      throw new Error("Hermano, implementa esta m...");
-    }
+    return await api.post<Producto>('/core/productos/', data);
   },
   update: async (id: number, data: any) => {
-    try {
-      return await api.put<Producto>(`/core/productos/${id}/`, data);
-    } catch (e) {
-      const index = localProductos.findIndex(p => p.id_producto === id);
-      if (index === -1) throw new Error("Producto no encontrado.");
-      
-      const updatedProduct: Producto = {
-        ...localProductos[index],
-        nombre: data.nombre ?? localProductos[index].nombre,
-        sku: data.sku ?? localProductos[index].sku,
-        descripcion: data.descripcion ?? localProductos[index].descripcion,
-        precio: data.precio ? Number(data.precio) : localProductos[index].precio,
-        stock_actual: data.stock_actual ? Number(data.stock_actual) : localProductos[index].stock_actual,
-        stock_minimo: data.stock_minimo ? Number(data.stock_minimo) : localProductos[index].stock_minimo,
-        stock_maximo: data.stock_maximo ? Number(data.stock_maximo) : localProductos[index].stock_maximo,
-        id_categoria: data.id_categoria ? Number(data.id_categoria) : localProductos[index].id_categoria,
-        id_proveedor_principal: data.id_proveedor_principal ? Number(data.id_proveedor_principal) : localProductos[index].id_proveedor_principal,
-      };
-
-      updatedProduct.categoria_nombre = localCategorias.find(c => c.id_categoria === updatedProduct.id_categoria)?.nombre || updatedProduct.categoria_nombre;
-      updatedProduct.proveedor_nombre = localProveedores.find(p => p.id_proveedor === updatedProduct.id_proveedor_principal)?.nombre || updatedProduct.proveedor_nombre;
-
-      if (updatedProduct.stock_actual <= updatedProduct.stock_minimo) {
-        updatedProduct.estado = 'critical';
-      } else if (updatedProduct.stock_actual <= updatedProduct.stock_minimo * 1.5) {
-        updatedProduct.estado = 'warning';
-      } else {
-        updatedProduct.estado = 'normal';
-      }
-
-      localProductos[index] = updatedProduct;
-      return { data: updatedProduct };
-    }
+    return await api.put<Producto>(`/core/productos/${id}/`, data);
   },
   delete: async (id: number) => {
-    try {
-      return await api.delete(`/core/productos/${id}/`);
-    } catch (e) {
-      localProductos = localProductos.filter(p => p.id_producto !== id);
-      return { data: { success: true } };
-    }
+    return await api.delete(`/core/productos/${id}/`);
   },
 };
 
 export const categoriasAPI = {
   getAll: async () => {
-    try {
-      return await api.get<Categoria[]>('/core/categorias/');
-    } catch (e) {
-      console.warn("[API Fallback] Backend offline. Usando base de datos simulada para Categorías.");
-      return { data: localCategorias };
-    }
+    return await api.get<Categoria[]>('/core/categorias/');
   },
   getOne: async (id: number) => {
-    try {
-      return await api.get<Categoria>(`/core/categorias/${id}/`);
-    } catch (e) {
-      const cat = localCategorias.find(c => c.id_categoria === id);
-      if (!cat) throw new Error("Categoría no encontrada.");
-      return { data: cat };
-    }
+    return await api.get<Categoria>(`/core/categorias/${id}/`);
   },
   create: async (data: Omit<Categoria, 'id_categoria'>) => {
-    try {
-      return await api.post<Categoria>('/core/categorias/', data);
-    } catch (e) {
-      const newCat: Categoria = {
-        id_categoria: Math.max(...localCategorias.map(c => c.id_categoria), 0) + 1,
-        nombre: data.nombre,
-        descripcion: data.descripcion || '',
-      };
-      localCategorias.push(newCat);
-      return { data: newCat };
-    }
+    return await api.post<Categoria>('/core/categorias/', data);
   },
   update: async (id: number, data: Omit<Categoria, 'id_categoria'>) => {
-    try {
-      return await api.put<Categoria>(`/core/categorias/${id}/`, data);
-    } catch (e) {
-      const index = localCategorias.findIndex(c => c.id_categoria === id);
-      if (index === -1) throw new Error("Categoría no encontrada.");
-      const updatedCat: Categoria = {
-        ...localCategorias[index],
-        nombre: data.nombre,
-        descripcion: data.descripcion,
-      };
-      localCategorias[index] = updatedCat;
-      return { data: updatedCat };
-    }
+    return await api.put<Categoria>(`/core/categorias/${id}/`, data);
   },
   delete: async (id: number) => {
-    try {
-      return await api.delete(`/core/categorias/${id}/`);
-    } catch (e) {
-      localCategorias = localCategorias.filter(c => c.id_categoria !== id);
-      return { data: { success: true } };
-    }
+    return await api.delete(`/core/categorias/${id}/`);
   },
 };
 
 export const proveedoresAPI = {
   getAll: async () => {
-    try {
-      return await api.get<Proveedor[]>('/proveedores/proveedores/');
-    } catch (e) {
-      console.warn("[API Fallback] Backend offline. Usando base de datos simulada para Proveedores.");
-      return { data: localProveedores };
-    }
+    return await api.get<Proveedor[]>('/proveedores/proveedores/');
   },
   getOne: async (id: number) => {
-    try {
-      return await api.get<any>(`/proveedores/${id}/`);
-    } catch (e) {
-      const prov = localProveedores.find(p => p.id_proveedor === id);
-      if (!prov) throw new Error("Proveedor no encontrado.");
-      return { data: prov };
-    }
+    return await api.get<any>(`/proveedores/${id}/`);
   },
   create: async (data: any) => {
-    try {
-      return await api.post('/proveedores/proveedores/', data);
-    } catch (e) {
-      throw new Error("Hermano, implementa esta m...");
-      /*const newProv: Proveedor = {
-        id_proveedor: Math.max(...localProveedores.map(p => p.id_proveedor), 0) + 1,
-        nombre: data.nombre,
-        contacto: data.contacto,
-        correo: data.correo,
-        telefono: data.telefono,
-        lead_time_dias: Number(data.lead_time_dias),
-        activo: true
-      };
-      localProveedores.push(newProv);
-      return { data: newProv };*/
-    }
+    return await api.post('/proveedores/proveedores/', data);
   },
   update: async (id: number, data: any) => {
-    try {
-      return await api.put(`/proveedores/${id}/`, data);
-    } catch (e) {
-      const index = localProveedores.findIndex(p => p.id_proveedor === id);
-      if (index === -1) throw new Error("Proveedor no encontrado.");
-      const updatedProv: Proveedor = {
-        ...localProveedores[index],
-        nombre: data.nombre ?? localProveedores[index].nombre,
-        contacto: data.contacto ?? localProveedores[index].contacto,
-        correo: data.correo ?? localProveedores[index].correo,
-        telefono: data.telefono ?? localProveedores[index].telefono,
-        lead_time_dias: data.lead_time_dias ? Number(data.lead_time_dias) : localProveedores[index].lead_time_dias,
-      };
-      localProveedores[index] = updatedProv;
-      return { data: updatedProv };
-    }
+    return await api.put(`/proveedores/${id}/`, data);
   },
   delete: async (id: number) => {
-    try {
-      return await api.delete(`/proveedores/${id}/`);
-    } catch (e) {
-      localProveedores = localProveedores.filter(p => p.id_proveedor !== id);
-      return { data: { success: true } };
-    }
+    return await api.delete(`/proveedores/${id}/`);
   },
 };
 
 export const movimientosAPI = {
   getAll: async (params: Record<string, any> = {}) => {
-    try {
-      const res = await api.get<any[]>('/inventario/movimientos/', { params });
-      const mapped = res.data.map(m => ({
-        id: m.id_movimiento,
-        producto_nombre: m.producto_nombre || '',
-        tipo_movimiento: (m.tipo_movimiento === 'entrada' || m.tipo_movimiento === 'Entrada') ? 'Entrada' as const : 'Salida' as const,
-        fecha: new Date(m.fecha),
-        cantidad: m.cantidad,
-        observaciones: m.observaciones || '',
-        id_producto: m.id_producto,
-      }));
-      return { data: mapped };
-    } catch (e) {
-      console.warn("[API Fallback] Backend offline. Usando base de datos simulada para Movimientos.");
-      return { data: localMovimientos };
-    }
+    const res = await api.get<any[]>('/inventario/movimientos/', { params });
+    const mapped = res.data.map(m => ({
+      id: m.id_movimiento,
+      producto_nombre: m.producto_nombre || '',
+      tipo_movimiento: (m.tipo_movimiento === 'entrada' || m.tipo_movimiento === 'Entrada') ? 'Entrada' as const : 'Salida' as const,
+      fecha: new Date(m.fecha),
+      cantidad: m.cantidad,
+      observaciones: m.observaciones || '',
+      id_producto: m.id_producto,
+    }));
+    return { data: mapped };
   },
   create: async (data: any) => {
-    try {
-      const backendData = {
-        tipo_movimiento: data.tipo_movimiento.toLowerCase(),
-        cantidad: Number(data.cantidad),
-        observaciones: data.observaciones || '',
-        id_producto: Number(data.id_producto),
-        id_usuario: Number(data.id_usuario),
-      };
-      return await api.post('/inventario/movimientos/', backendData);
-    } catch (e) {
-      const targetProd = localProductos.find(p => p.id_producto === Number(data.id_producto));
-      if (!targetProd) throw new Error("Producto no encontrado.");
-
-      const cant = Number(data.cantidad);
-      const isEntrada = data.tipo_movimiento.toLowerCase() === 'entrada';
-
-      if (!isEntrada && targetProd.stock_actual < cant) {
-        const mockError: any = new Error("No hay suficiente stock disponible para este producto.");
-        mockError.response = {
-          data: { error: "No hay suficiente stock disponible para este producto." }
-        };
-        throw mockError;
-      }
-
-      if (isEntrada) {
-        targetProd.stock_actual += cant;
-      } else {
-        targetProd.stock_actual -= cant;
-      }
-
-      // Re-evaluar estado del producto
-      if (targetProd.stock_actual <= targetProd.stock_minimo) {
-        targetProd.estado = 'critical';
-      } else if (targetProd.stock_actual <= targetProd.stock_minimo * 1.5) {
-        targetProd.estado = 'warning';
-      } else {
-        targetProd.estado = 'normal';
-      }
-
-      const newMov: Movimiento = {
-        id: Math.max(...localMovimientos.map(m => m.id), 0) + 1,
-        producto_nombre: targetProd.nombre,
-        tipo_movimiento: isEntrada ? 'Entrada' : 'Salida',
-        fecha: new Date(),
-        cantidad: cant,
-        observaciones: data.observaciones || '',
-        id_producto: targetProd.id_producto,
-      };
-
-      localMovimientos.unshift(newMov);
-      return { data: newMov };
-    }
+    const backendData = {
+      tipo_movimiento: data.tipo_movimiento.toLowerCase(),
+      cantidad: Number(data.cantidad),
+      observaciones: data.observaciones || '',
+      id_producto: Number(data.id_producto),
+      id_usuario: Number(data.id_usuario),
+    };
+    return await api.post('/inventario/movimientos/', backendData);
   }
 };
 
-let localPredicciones = [
-  {
-    producto_id: 1,
-    producto_nombre: "Laptop Dell XPS 15",
-    sku: "LAP-XPS-001",
-    stock_actual: 0,
-    prediccion_7d: 12.5,
-    prediccion_14d: 25.0,
-    prediccion_21d: 38.2,
-    mae: 1.18,
-    mape: 9.1,
-    lead_time_dias: 5,
-    modelStatus: 'entrenado' as const,
-  },
-  {
-    producto_id: 2,
-    producto_nombre: "Mouse Inalámbrico Logitech MX Master",
-    sku: "MOU-LOG-023",
-    stock_actual: 2,
-    prediccion_7d: 15.2,
-    prediccion_14d: 31.0,
-    prediccion_21d: 46.8,
-    mae: 0.85,
-    mape: 7.2,
-    lead_time_dias: 3,
-    modelStatus: 'entrenado' as const,
-  },
-  {
-    producto_id: 3,
-    producto_nombre: "Teclado Mecánico RGB",
-    sku: "KEY-MEC-045",
-    stock_actual: 0,
-    prediccion_7d: null,
-    prediccion_14d: null,
-    prediccion_21d: null,
-    mae: null,
-    mape: null,
-    lead_time_dias: 4,
-    modelStatus: 'sin_datos' as const,
-  },
-  {
-    producto_id: 4,
-    producto_nombre: "Monitor LG 27\" 4K",
-    sku: "MON-LG-012",
-    stock_actual: 3,
-    prediccion_7d: 5.4,
-    prediccion_14d: 11.2,
-    prediccion_21d: 18.0,
-    mae: 1.45,
-    mape: 11.5,
-    lead_time_dias: 6,
-    modelStatus: 'desactualizado' as const,
-  }
-];
-
 export const iaAPI = {
   getAll: async () => {
-    try {
-      const res = await api.get<any[]>('/ia/predicciones/');
-      const mapped = res.data.map(p => {
-        const targetProd = localProductos.find(lp => lp.id_producto === p.producto_id);
-        const leadTime = targetProd ? targetProd.stock_minimo : 4;
-        const modelStatus = (p.prediccion_7d !== null ? 'entrenado' : 'sin_datos') as 'entrenado' | 'sin_datos' | 'desactualizado';
-        
-        return {
-          producto_id: p.producto_id,
-          producto_nombre: p.producto_nombre,
-          sku: p.sku,
-          stock_actual: p.stock_actual,
-          prediccion_7d: p.prediccion_7d !== null ? Number(p.prediccion_7d) : null,
-          prediccion_14d: p.prediccion_14d !== null ? Number(p.prediccion_14d) : null,
-          prediccion_21d: p.prediccion_21d !== null ? Number(p.prediccion_21d) : null,
-          mae: p.prediccion_7d !== null ? 1.18 : null,
-          mape: p.prediccion_7d !== null ? 9.1 : null,
-          lead_time_dias: leadTime,
-          modelStatus: modelStatus
-        };
-      });
-      return { data: mapped };
-    } catch (e) {
-      console.warn("[API Fallback] Backend offline. Usando base de datos simulada para IA/Predicciones.");
-      const synchronized = localPredicciones.map(p => {
-        const prod = localProductos.find(lp => lp.id_producto === p.producto_id);
-        return {
-          ...p,
-          stock_actual: prod ? prod.stock_actual : p.stock_actual,
-          lead_time_dias: prod ? prod.stock_minimo : p.lead_time_dias,
-        };
-      });
-      return { data: synchronized };
-    }
+    const res = await api.get<any[]>('/ia/predicciones/');
+    return { data: mapped };
   },
   generarTodos: async () => {
-    try {
-      return await api.post('/ia/predicciones/generar-todos/');
-    } catch (e) {
-      localPredicciones = localPredicciones.map(p => {
-        return {
-          ...p,
-          prediccion_7d: Number((Math.random() * 20 + 5).toFixed(1)),
-          prediccion_14d: Number((Math.random() * 40 + 10).toFixed(1)),
-          prediccion_21d: Number((Math.random() * 60 + 15).toFixed(1)),
-          mae: Number((Math.random() * 1.5 + 0.5).toFixed(2)),
-          mape: Number((Math.random() * 8 + 4).toFixed(1)),
-          modelStatus: 'entrenado' as const,
-        };
-      });
-      return { data: { success: true } };
-    }
+    return await api.post('/ia/predicciones/generar-todos/');
   }
 };
