@@ -6,6 +6,9 @@ import {
   Truck,
   Warehouse,
   Brain,
+  ShoppingCart,
+  BarChart3,
+  Users,
   type LucideIcon
 } from "lucide-react";
 
@@ -41,6 +44,24 @@ export const navigation: NavigationItem[] = [
     path: "routes/proveedores.tsx",
     label: "Proveedores",
     icon: Truck,
+  },
+  {
+    url: "pedidos",
+    path: "routes/pedidos.tsx",
+    label: "Pedidos",
+    icon: ShoppingCart,
+  },
+  {
+    url: "informes",
+    path: "routes/informes.tsx",
+    label: "Informes",
+    icon: BarChart3,
+  },
+  {
+    url: "usuarios",
+    path: "routes/usuarios.tsx",
+    label: "Usuarios",
+    icon: Users,
   },
   {
     url: "movimientos",
