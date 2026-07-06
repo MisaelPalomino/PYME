@@ -276,7 +276,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {productHistory?.historial.map(m => (
+                  {productHistory.map(m => (
                     <tr className="border-b border-border/50">
                       <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">
                         {format(m.fecha, 'dd/MM/yy HH:mm', { locale: es })}
