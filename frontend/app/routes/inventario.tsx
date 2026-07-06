@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { History } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -10,19 +10,20 @@ import type { Producto } from '~/api/types';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/inventario";
 import { productosAPI, categoriasAPI, movimientosAPI } from "~/api/api";
+import { toast } from 'sonner';
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const defaultTipo = url.searchParams.get("tipo");
 
+  // Optimizador de Rendimiento: Solo se cargan productos y categorías inicialmente.
+  // El historial de movimientos se descarga bajo demanda (Lazy Loading) por producto.
   const [
     { data: backendProductos },
-    { data: categorias },
-    { data: movimientos }
+    { data: categorias }
   ] = await Promise.all([
     productosAPI.getAll(),
-    categoriasAPI.getAll(),
-    movimientosAPI.getAll()
+    categoriasAPI.getAll()
   ]);
 
   const filters: Filter[] = [
@@ -69,7 +70,6 @@ export async function loader({ request }: Route.LoaderArgs) {
   return {
     productos,
     categorias,
-    movimientos,
     filters,
   };
 }
@@ -78,6 +78,8 @@ const columnHelper = createColumnHelper<Producto & { estado: "normal" | "warning
 
 export default function Inventory({ loaderData }: Route.ComponentProps) {
   const [historyProductId, setHistoryProductId] = useState<number | null>(null);
+  const [productHistory, setProductHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const totals = {
     total: loaderData.productos.length,
@@ -87,8 +89,21 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
   };
 
   const historyProduct = loaderData.productos.find(p => p.id_producto === historyProductId);
-  const productHistory = loaderData.movimientos.filter(m => m.id_producto === historyProductId);
 
+  // Carga asíncrona optimizada del historial de movimientos por producto
+  const handleVerHistorial = async (id: number) => {
+    setHistoryProductId(id);
+    setProductHistory([]);
+    setLoadingHistory(true);
+    try {
+      const { data } = await movimientosAPI.getHistorialPorProducto(id);
+      setProductHistory(data);
+    } catch (error) {
+      toast.error("Error al cargar el historial del producto");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const columns = [
     columnHelper.accessor("nombre", {
@@ -169,7 +184,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
         return (
           <div className="flex justify-center">
             <button
-              onClick={() => setHistoryProductId(info.row.original.id_producto)}
+              onClick={() => handleVerHistorial(info.row.original.id_producto)}
               className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground flex"
               title="Ver historial"
             >
@@ -212,12 +227,14 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 
       {/* History dialog */}
       <Dialog open={!!historyProductId} onOpenChange={(open) => { if (!open) setHistoryProductId(null); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg bg-background text-foreground border border-border">
           <DialogHeader>
             <DialogTitle>Historial de Movimientos — {historyProduct?.nombre}</DialogTitle>
           </DialogHeader>
           <div className="max-h-80 overflow-y-auto">
-            {productHistory.length === 0 ? (
+            {loadingHistory ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Cargando movimientos...</p>
+            ) : productHistory.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">Sin movimientos registrados</p>
             ) : (
               <table className="w-full text-xs">
