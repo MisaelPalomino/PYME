@@ -124,3 +124,19 @@ export const pedidosAPI = {
     return await api.delete(`/pedidos/pedidos/${id}/`);
   }
 };
+
+export const informesAPI = {
+  getBajoStock: async (params: Record<string, any> = {}) => {
+    return await api.get<any[]>('/informes/bajo-stock/', { params });
+  },
+  getRotacion: async (params: Record<string, any> = {}) => {
+    return await api.get<any[]>('/informes/rotacion/', { params });
+  },
+  getConsolidado: async () => {
+    return await api.get<any>('/informes/consolidado/');
+  },
+  getGraficosComprasVentas: async (params: Record<string, any> = {}) => {
+    return await api.get<any[]>('/informes/graficos-compras-ventas/', { params });
+  }
+};
+
