@@ -1,136 +1,214 @@
-import { Menu, Bell, User, LogOut, ChevronDown } from 'lucide-react';
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import { useAuth } from "~/context/AuthContext";
+import { Form, useFetcher } from 'react-router';
+import { Button } from '~/components/ui/button';
+import type { Route } from "./+types/login";
+import { useEffect, useState } from 'react';
+import type { LoginAPIData } from '~/api/types';
+import { LoginAPI, type Result } from '~/api/api';
+import { toast } from 'sonner';
 
-type HeaderProps = {
-  onMenuClick: () => void,
-  sidebarCollapsed: boolean,
-  currentUser: { name: string; role: string }
-};
+export async function action({ request }: Route.ActionArgs) {
+  const formData = await request.formData();
 
-export async function loader() {
-  return {};
+  const data: LoginAPIData = {
+    username: formData.get("username") as string,
+    password: formData.get("password") as string,
+  };
+
+  const result = await LoginAPI.login(data);
+  console.warn(result);
+  return result;
 }
 
-export default function Login({ onMenuClick, sidebarCollapsed, currentUser }: HeaderProps) {
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showUser, setShowUser] = useState(false);
+export default function Login() {
+  const fetcher = useFetcher<typeof action>();
+  const [formData, setFormData] = useState<LoginAPIData>({
+    username: "",
+    password: "",
+  });
 
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    setShowUser(false);
-    navigate("/");
-  };
-
-  const severityColors: Record<string, string> = {
-    critical: 'bg-destructive',
-    warning: 'bg-yellow-500',
-    info: 'bg-blue-500',
-  };
+  useEffect(() => {
+    if (!fetcher.data) return;
+    if (fetcher.data.ok) {
+      toast.success(fetcher.data.data.access);
+    } else {
+      toast.error(fetcher.data.error);
+    }
+  }, [fetcher.data]);
 
   return (
-    <header
-      className={`fixed top-0 right-0 h-16 bg-card border-b border-border z-30 flex items-center px-4 gap-4 transition-all duration-300
-        ${sidebarCollapsed ? 'left-16' : 'left-64'}
-        max-lg:left-0
-      `}
-    >
-      <button
-        onClick={onMenuClick}
-        className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors lg:hidden"
-      >
-        <Menu className="w-5 h-5" />
-      </button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="bg-white p-8 rounded-lg shadow-md w-96">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-3">
+            <span className="text-white text-2xl">📦</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Sistema de Inventario</h1>
+          <p className="text-sm text-gray-500 mt-1">Inicia sesión para continuar</p>
+        </div>
 
-      <div className="flex-1" />
+        <fetcher.Form method="post">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Correo Electrónico
+            </label>
+            <input
+              type="email"
+              name="username"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.username}
+              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              placeholder="admin@email.com"
+              required
+            />
+          </div>
 
-      {/* Notifications */}
-      <div className="relative">
-        <button
-          onClick={() => {
-            setShowNotifications(!showNotifications);
-            setShowUser(false);
-          }}
-          className="relative p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              name="password"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              placeholder="admin123"
+              required
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={fetcher.state !== "idle"}
+          >
+            {fetcher.state !== "idle" ? 'Cargando...' : 'Iniciar Sesión'}
+          </Button>
+        </fetcher.Form>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full mt-3"
         >
-          <Bell className="w-5 h-5" />
-        </button>
+          Crear cuenta
+        </Button>
 
-        {showNotifications && (
-          <div className="absolute right-0 top-12 w-80 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <span className="text-sm text-foreground">Notificaciones</span>
-              <span className="text-xs text-muted-foreground">$unreadCount sin leer</span>
-            </div>
-
-            <div className="max-h-80 overflow-y-auto">
-              {/* Aquí irán las notificaciones */}
-            </div>
-          </div>
-        )}
+        <div className="mt-4 text-center text-sm text-gray-500">
+          <p>Demo: admin@email.com / admin123</p>
+        </div>
       </div>
-
-      {/* User menu */}
-      <div className="relative">
-        <button
-          onClick={() => {
-            setShowUser(!showUser);
-            setShowNotifications(false);
-          }}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
-        >
-          <div className="w-7 h-7 bg-primary rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-primary-foreground" />
-          </div>
-
-          <div className="hidden sm:block text-left">
-            <p className="text-xs text-foreground leading-none">
-              {currentUser.name}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {currentUser.role}
-            </p>
-          </div>
-
-          <ChevronDown className="w-3 h-3 text-muted-foreground hidden sm:block" />
-        </button>
-
-        {showUser && (
-          <div className="absolute right-0 top-12 w-48 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
-            <div className="px-4 py-3 border-b border-border">
-              <p className="text-sm text-foreground">
-                {currentUser.name}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {currentUser.role}
-              </p>
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-accent/50 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Cerrar sesión
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Close dropdowns on outside click */}
-      {(showNotifications || showUser) && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => {
-            setShowNotifications(false);
-            setShowUser(false);
-          }}
-        />
-      )}
-    </header>
+    </div>
   );
+  /*
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Si ya está autenticado, ir al dashboard
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    console.log("Entró al submit");
+    console.log(email, pacreo que est´ssword);
+
+    setLoading(true);
+    setError("");
+
+    try {
+        console.log("Antes del login");
+
+        const result = await login(email, password);
+
+        console.log("Después del login");
+        console.log(result);
+
+    } catch (err) {
+        console.error(err);
+        setError("Credenciales incorrectas");
+    } finally {
+        setLoading(false);
+    }
+};
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="bg-white p-8 rounded-lg shadow-md w-96">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-3">
+            <span className="text-white text-2xl">📦</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Sistema de Inventario</h1>
+          <p className="text-sm text-gray-500 mt-1">Inicia sesión para continuar</p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm mb-4">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Correo Electrónico
+            </label>
+            <input
+              type="email"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@email.com"
+              required
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="admin123"
+              required
+            />
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={loading}
+          >
+            {loading ? 'Cargando...' : 'Iniciar Sesión'}
+          </Button>
+        </form>
+
+         <Button
+            type="button"
+            variant="outline"
+            className="w-full mt-3"
+            onClick={() => navigate("/registro")}
+          >
+            Crear cuenta
+          </Button>
+
+        <div className="mt-4 text-center text-sm text-gray-500">
+          <p>Demo: admin@email.com / admin123</p>
+        </div>
+      </div>
+    </div>
+  );
+  */
 }

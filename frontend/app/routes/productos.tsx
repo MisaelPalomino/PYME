@@ -24,7 +24,7 @@ type ProductoFormData = {
   stock_actual: string;
   stock_minimo: string;
   stock_maximo: string;
-  id_categoria: string;
+  id_categoria: string ;
   id_proveedor_principal: string;
 }
 
@@ -57,7 +57,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     nombre: '',
     sku: '',
     descripcion: '',
-    precio: '',
+    precio: '', 
     stock_actual: '',
     stock_minimo: '',
     stock_maximo: '',

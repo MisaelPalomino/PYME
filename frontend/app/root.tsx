@@ -10,10 +10,8 @@ import {
 
 import type { Route } from "./+types/root"
 import "./app.css"
-import { useState } from "react";
-import { Sidebar } from "~/components/layout/Sidebar";
-import { Header } from "~/components/layout/Header";
-import { AuthProvider, useAuth } from "~/context/AuthContext";
+import { AuthProvider } from "~/context/AuthContext";
+import { Toaster } from "~/components/ui/sonner";
 import {
   AlertCircle,
   Bug,
@@ -35,7 +33,6 @@ import {
   AlertDescription,
   AlertTitle,
 } from "~/components/ui/alert";
-import { Toaster } from "./components/ui/sonner";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -50,48 +47,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        <Toaster />
       </body>
     </html>
   )
 }
 
-function AppLayout() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const { user } = useAuth();
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(c => !c)}
-        mobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
-      />
-
-      <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
-        <Header
-          onMenuClick={() => setMobileOpen(true)}
-          sidebarCollapsed={sidebarCollapsed}
-          currentUser={user ? { name: user.nombre, role: user.rol } : { name: "Invitado", role: "Sin rol" }}
-        />
-
-        <main className="pt-16 min-h-screen">
-          <div className="px-4 py-6 max-w-[1600px] mx-auto">
-            <Outlet />
-          </div>
-        </main>
-        <Toaster />
-      </div>
-    </div>
-  );
-}
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppLayout />
-    </AuthProvider>
+      <Outlet />
   );
 }
 

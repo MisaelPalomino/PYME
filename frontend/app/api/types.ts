@@ -128,6 +128,11 @@ export type Inventario = {
   productos: InventarioProducto[]
 };
 
+export type LoginAPIData = {
+  username: string,
+  password: string,
+};
+
 export type Pedido = {
   id_pedido: number;
   id_proveedor: number;

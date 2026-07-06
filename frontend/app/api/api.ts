@@ -1,5 +1,5 @@
-import axios from 'axios';
-import type { Proveedor, Categoria, Producto, Movimiento, Dashboard, Pedido, HistorialProducto, Inventario, Prediccion } from '~/api/types';
+import axios, { AxiosError, type AxiosResponse } from 'axios';
+import type { Proveedor, Categoria, Producto, Movimiento, Dashboard, Pedido, HistorialProducto, Inventario, Prediccion, LoginAPIData } from '~/api/types';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -9,6 +9,56 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+export type Result<T, E> =
+  { ok: true, data: T } |
+  { ok: false, error: E };
+
+export type LoginAPIResponse = {
+  access: string,
+  refresh: string,
+  usuario: {
+    id: number,
+    username: string
+  }
+};
+
+async function axios_call_to_result<T>(f: () => Promise<AxiosResponse<T>>): Promise<Result<T, string>> {
+  try {
+    const response = await f();
+
+    return { ok: true, data: response.data };
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.warn(error);
+    }
+
+    if (axios.isAxiosError(error)) {
+      return {
+        ok: false,
+        error: error.response
+          ? `${error.response.data?.message ?? "Error del servidor"}. Código: ${error.response.status}`
+          : error.message,
+      };
+    }
+
+    if (error instanceof Error) {
+      return {
+        ok: false,
+        error: error.message,
+      };
+    }
+
+    return {
+      ok: false,
+      error: "Ha ocurrido un error inesperado.",
+    };
+  }
+}
+
+export const LoginAPI = {
+  login: async (data: LoginAPIData) => axios_call_to_result<LoginAPIResponse>(async () => await api.post("/auth/login/", data))
+};
 
 export const dashboardAPI = {
   getAll: async () => await api.get<Dashboard>("/dashboard/dashboard")
@@ -160,6 +210,7 @@ export const informesAPI = {
   }
 };
 
+
 export const usuariosAPI = {
   getAll: async () => {
     return await api.get<any[]>('/auth/usuarios/');
@@ -180,5 +231,3 @@ export const usuariosAPI = {
     return await api.post(`/auth/usuarios/${id}/cambiar_password/`, data);
   }
 };
-
-
