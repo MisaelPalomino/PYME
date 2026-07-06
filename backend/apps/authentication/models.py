@@ -9,12 +9,8 @@ class Usuario(AbstractUser):
     rol = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
 
-    last_login = None
-    first_name = None
-    last_name = None
-    is_staff = None
-    is_superuser = None
-    date_joined = None
+    # Los campos is_staff y is_superuser se heredan de AbstractUser
+    # NO los anulamos con None, los dejamos como están.
 
     class Meta:
         db_table = 'usuario'

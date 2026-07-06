@@ -46,7 +46,7 @@ let localProveedores: Proveedor[] = [
 ];
 
 export const dashboardAPI = {
-  getAll: async () => await api.get<Dashboard>("/dashboard/dashboard")
+  getAll: async () => await api.get<Dashboard>("/dashboard/dashboard/")
 }
 
 export const productosAPI = {
@@ -210,7 +210,7 @@ export const proveedoresAPI = {
   },
   getOne: async (id: number) => {
     try {
-      return await api.get<any>(`/proveedores/${id}/`);
+      return await api.get<any>(`/proveedores/proveedor/${id}/`);
     } catch (e) {
       const prov = localProveedores.find(p => p.id_proveedor === id);
       if (!prov) throw new Error("Proveedor no encontrado.");
@@ -448,3 +448,5 @@ export const iaAPI = {
     }
   }
 };
+
+export default api;

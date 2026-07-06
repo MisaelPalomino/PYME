@@ -1,5 +1,5 @@
-import { createContext, useState, useContext } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
+import api from '~/api/api';
 
 interface User {
   id: number;
@@ -18,36 +18,55 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const USUARIO_SIMULADO: User = {
-  id: 1,
-  nombre: 'Juan Pérez',
-  email: 'admin@email.com',
-  rol: 'Administrador',
-};
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider = ({ children }: any) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        try {
+          const response = await api.get('/auth/me/');
+          setUser(response.data);
+        } catch (error) {
+          console.error('Error al cargar usuario:', error);
+          localStorage.removeItem('access_token');
+        }
+      }
+      setLoading(false);
+    };
+    loadUser();
+  }, []);
 
   const login = async (email: string, password: string): Promise<User> => {
+    console.log('🔐 Intentando login...');
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (email === 'admin@email.com' && password === 'admin123') {
-      setUser(USUARIO_SIMULADO);
+    try {
+      const response = await api.post('/auth/login/', {
+        username: email,
+        password
+      });
+      
+      console.log('✅ Respuesta del backend:', response.data);
+      
+      const { access, usuario } = response.data;
+      localStorage.setItem('access_token', access);
+      setUser(usuario);
       setLoading(false);
-      return USUARIO_SIMULADO;
-    } else {
-      setLoading(false);
-      throw new Error('Credenciales incorrectas');
-    }
+      return usuario;
+      }catch (error: any) {
+        console.log(error.response?.data.non_field_errors);
+        throw error;
+      }
   };
 
   const logout = () => {
+    localStorage.removeItem('access_token');
     setUser(null);
   };
 
-  const value: AuthContextType = {
+  const value = {
     user,
     loading,
     login,
