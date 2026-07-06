@@ -6,6 +6,7 @@ import {
   Truck,
   Warehouse,
   Brain,
+  ShoppingCart,
   type LucideIcon
 } from "lucide-react";
 
@@ -41,6 +42,12 @@ export const navigation: NavigationItem[] = [
     path: "routes/proveedores.tsx",
     label: "Proveedores",
     icon: Truck,
+  },
+  {
+    url: "pedidos",
+    path: "routes/pedidos.tsx",
+    label: "Pedidos",
+    icon: ShoppingCart,
   },
   {
     url: "movimientos",
