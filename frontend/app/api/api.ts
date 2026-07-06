@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Proveedor, Categoria, Producto, Movimiento, Dashboard, Pedido } from '~/api/types';
+import type { Proveedor, Categoria, Producto, Movimiento, Dashboard, Pedido, HistorialProducto, Inventario } from '~/api/types';
 
 const API_URL = 'http://localhost:8000/api';
 

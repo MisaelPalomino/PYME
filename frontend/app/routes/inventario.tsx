@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { History } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -6,10 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/u
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { createColumnHelper } from '@tanstack/react-table';
-import type { HistorialProducto, Producto } from '~/api/types';
+import type { Producto } from '~/api/types';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/inventario";
-import { productosAPI, categoriasAPI, movimientosAPI } from "~/api/api";
+import { productosAPI, categoriasAPI, movimientosAPI, inventarioAPI } from "~/api/api";
 import { toast } from 'sonner';
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -209,9 +209,9 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
     const fetchData = async () => {
       const result = await inventarioAPI.getHistory(historyProductId!);
       
-      setProductHistory(result.data);
+      // setProductHistory(result.data);
       setLoadingHistory(false);
-      setOpenHistory(true);
+      // setOpenHisotry(true);
     }
     
     console.warn("Pinga");
@@ -223,7 +223,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
   function handleHistoryClose() {
     setLoadingHistory(true);
     setHistoryProductId(null);
-    setOpenHistory(false);
+    // setOpenHistory(false);
   }
 
   return (

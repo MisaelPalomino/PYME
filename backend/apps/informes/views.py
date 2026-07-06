@@ -1,5 +1,4 @@
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -27,7 +26,6 @@ class BajoStockView(APIView):
     GET /api/informes/bajo-stock/?categoria=<id>&formato=<excel|pdf>
     Reporte de Bajo Stock (RF15). Sin 'formato', responde JSON.
     """
-    permission_classes = [IsAuthenticated]
  
     def get(self, request):
         datos = ReporteService.bajo_stock(categoria=_categoria_param(request))
@@ -60,7 +58,6 @@ class RotacionView(APIView):
     GET /api/informes/rotacion/?categoria=<id>&periodo=<...>&formato=<excel|pdf>
     Reporte de Rotación de Inventario (RF16).
     """
-    permission_classes = [IsAuthenticated]
  
     def get(self, request):
         datos = ReporteService.rotacion(
@@ -92,7 +89,6 @@ class ConsolidadoView(APIView):
     GET /api/informes/consolidado/?formato=<excel|pdf>
     Reporte Consolidado (RF17): resumen + últimas semanas + métricas IA.
     """
-    permission_classes = [IsAuthenticated]
  
     def get(self, request):
         datos = ReporteService.consolidado()
@@ -143,7 +139,6 @@ class GraficoComprasVentasView(APIView):
     GET /api/informes/graficos-compras-ventas/?categoria=<id>&periodo=<...>&formato=<excel|pdf>
     Gráfico de Compras/Ventas filtrado (RF19).
     """
-    permission_classes = [IsAuthenticated]
  
     def get(self, request):
         datos = ReporteService.graficos_compras_ventas(

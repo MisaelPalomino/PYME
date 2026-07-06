@@ -177,46 +177,6 @@ export default function Predictions({ loaderData }: Route.ComponentProps) {
         );
       }
     }),
-    columnHelper.accessor("lead_time_dias", {
-      header: createSortableHeader("Lead Time"),
-      cell: (info) => (
-        <div className="px-4 py-3 text-center text-muted-foreground">
-          {info.getValue()}d
-        </div>
-      )
-    }),
-    columnHelper.accessor("mae", {
-      header: "MAE",
-      cell: (info) => (
-        <div className="px-4 py-3 text-center text-muted-foreground font-mono">
-          {info.getValue() !== null ? info.getValue()?.toFixed(2) : '-'}
-        </div>
-      )
-    }),
-    columnHelper.accessor("mape", {
-      header: "MAPE",
-      cell: (info) => (
-        <div className="px-4 py-3 text-center text-muted-foreground font-mono">
-          {info.getValue() !== null ? `${info.getValue()?.toFixed(1)}%` : '-'}
-        </div>
-      )
-    }),
-    columnHelper.accessor("modelStatus", {
-      header: "Modelo",
-      cell: (info) => {
-        const status = info.getValue();
-        const msConfig = modelStatusConfig[status];
-        const MSIcon = msConfig.icon;
-        return (
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-center gap-1.5">
-              <MSIcon className={`w-3.5 h-3.5 ${msConfig.color}`} />
-              <span className="text-xs text-muted-foreground">{msConfig.label}</span>
-            </div>
-          </div>
-        );
-      }
-    }),
     columnHelper.display({
       id: "alertType",
       header: "Alerta",

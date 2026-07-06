@@ -125,7 +125,6 @@ export async function action({ request }: ActionFunctionArgs) {
     }
     return { success: true };
   } catch (error: any) {
-    console.error(error);
     return { error: error.response?.data?.error || 'Error al comunicarse con el servidor' };
   }
 }
@@ -412,36 +411,72 @@ Departamento de Compras — StockMaster Pro`;
       </Card>
 
       {/* Email template dialog */}
-      <Dialog open={!!emailOrder} onOpenChange={open => { if (!open) setEmailOrder(null); }}>
-        <DialogContent className="max-w-xl">
+      <Dialog
+        open={!!emailOrder}
+        onOpenChange={(open) => {
+          if (!open) setEmailOrder(null);
+        }}
+      >
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              Plantilla de Correo — Pedido {emailOrder?.id.toUpperCase()}
+              <Mail className="w-5 h-5" />
+              Plantilla de correo — Pedido {emailOrder?.id.toUpperCase()}
             </DialogTitle>
           </DialogHeader>
+
           {emailOrder && (
-            <>
-              <div className="bg-muted/40 border border-border rounded-lg p-4 text-xs font-mono whitespace-pre-wrap leading-relaxed text-foreground max-h-80 overflow-y-auto">
-                {buildEmailTemplate(emailOrder)}
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/40">
+                <div className="border-b px-4 py-2 text-sm font-medium">
+                  Contenido del correo
+                </div>
+
+                <pre className="max-h-96 overflow-y-auto whitespace-pre-wrap break-words p-4 text-xs leading-relaxed font-mono">
+                  {buildEmailTemplate(emailOrder)}
+                </pre>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Copia esta plantilla y envíala desde tu cliente de correo. El sistema no realiza envíos automáticos.
-              </p>
-            </>
+
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+                Copia esta plantilla y pégala en tu cliente de correo. El sistema
+                únicamente genera el contenido; no envía correos automáticamente.
+              </div>
+            </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEmailOrder(null)}>Cerrar</Button>
-            {emailOrder && emailOrder.status === 'pendiente' && (
-              <Button onClick={() => handleSendOrder(emailOrder.id)} className="bg-blue-600 hover:bg-blue-700 gap-2">
-                <Send className="w-4 h-4" />
-                Marcar como Enviado
-              </Button>
-            )}
-            <Button onClick={handleCopyEmail} className="gap-2">
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              {copied ? 'Copiado!' : 'Copiar plantilla'}
+
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setEmailOrder(null)}
+            >
+              Cerrar
             </Button>
+
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={handleCopyEmail}
+                className="gap-2"
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+
+                {copied ? "¡Copiado!" : "Copiar plantilla"}
+              </Button>
+
+              {emailOrder?.status === "pendiente" && (
+                <Button
+                  onClick={() => handleSendOrder(emailOrder.id)}
+                  className="gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  Marcar como enviado
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

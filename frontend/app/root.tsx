@@ -97,25 +97,53 @@ export default function App() {
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let title = "Ha ocurrido un error";
-  let description = "Se produjo un error inesperado.";
+  let description =
+    "Ocurrió un problema inesperado. Intenta nuevamente dentro de unos momentos.";
   let status: number | undefined;
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
     status = error.status;
 
-    if (status === 404) {
-      title = "Página no encontrada";
-      description =
-        "La página que intentas visitar no existe o fue movida.";
-    } else {
-      title = error.statusText || "Error";
-      description = "No fue posible completar la solicitud.";
+    switch (error.status) {
+      case 400:
+        title = "Solicitud inválida";
+        description = "La información enviada no es válida.";
+        break;
+
+      case 401:
+        title = "No autorizado";
+        description = "Debes iniciar sesión para acceder a esta página.";
+        break;
+
+      case 403:
+        title = "Acceso denegado";
+        description =
+          "No tienes permisos suficientes para realizar esta acción.";
+        break;
+
+      case 404:
+        title = "Página no encontrada";
+        description =
+          "La página solicitada no existe o fue eliminada.";
+        break;
+
+      case 500:
+        title = "Error interno del servidor";
+        description =
+          "Se produjo un problema en el servidor. Intenta nuevamente más tarde.";
+        break;
+
+      default:
+        title = `Error ${error.status}`;
+        description = error.data?.message ??
+          "No fue posible completar la solicitud.";
     }
   } else if (error instanceof Error) {
-    description = error.message;
+    title = "Error inesperado";
 
     if (import.meta.env.DEV) {
+      description = error.message;
       stack = error.stack;
     }
   }
