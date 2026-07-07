@@ -23,10 +23,6 @@ class Usuario(AbstractUser):
         return self.username
     
     @property
-    def id(self):
-        return self.id_usuario
-    
-    @property
     def is_active(self):
         return self.activo
 
