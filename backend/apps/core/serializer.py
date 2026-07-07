@@ -32,7 +32,7 @@ class ProductoSerializer(serializers.ModelSerializer):
     proveedor_nombre = serializers.CharField(
         source="id_proveedor_principal.nombre", read_only=True
     )
-
+    estado = serializers.CharField(read_only=True)
     class Meta:
         model = Producto
 
@@ -45,6 +45,7 @@ class ProductoSerializer(serializers.ModelSerializer):
             "stock_actual",
             "stock_minimo",
             "stock_maximo",
+            "estado",
             "id_categoria",
             "categoria_nombre",
             "id_proveedor_principal",
