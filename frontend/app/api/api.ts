@@ -1,12 +1,6 @@
 import axios, { AxiosError, type AxiosResponse } from 'axios';
-import type { Proveedor, Categoria, Producto, Movimiento, Dashboard, Pedido, HistorialProducto, Inventario, Prediccion, LoginAPIData } from '~/api/types';
+import type { Movimiento, Dashboard, Pedido, Prediccion, LoginAPIData } from '~/api/types';
 
-export type ProductoDTO = Omit<Producto, "id_producto" | "estado" | "proveedor_nombre">;
-
-export const inventarioAPI = {
-  getAll: async () => await api.get<Inventario>("/inventario/stock/"),
-  getHistory: async (id_producto: number) => await api.get<HistorialProducto>(`/inventario/historial/${id_producto}`),
-};
 
 
 

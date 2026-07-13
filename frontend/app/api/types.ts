@@ -20,31 +20,6 @@ export type DetallePedido = {
   precio_unitario: number;
 };
 
-export type HistorialProducto = {
-  id_producto: number,
-  historial: {
-    fecha: Date,
-    tipo_movimiento: "salida" | "entrada",
-    cantidad: number,
-    observaciones: string,
-  }[]
-};
-
-export type InventarioProducto = {
-  id_producto: number,
-  nombre: string,
-  stock_actual: number,
-  estado_stock: "Normal" | "Advertencia" | "Crítico"
-};
-
-export type Inventario = {
-  total: number,
-  stock_agotado: number,
-  stock_critico: number,
-  stock_normal: number,
-  productos: InventarioProducto[]
-};
-
 
 export type Pedido = {
   id_pedido: number;

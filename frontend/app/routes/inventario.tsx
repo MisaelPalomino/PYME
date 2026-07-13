@@ -6,25 +6,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '~/components/u
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { createColumnHelper } from '@tanstack/react-table';
-import type { Producto } from '~/api/types';
+import * as productosAPI from '~/api/producto';
+import type { Producto } from '~/api/producto';
+import * as categoriasAPI from '~/api/categoria';
+import type { Categoria } from '~/api/categoria';
+import * as movimientosAPI from '~/api/movimiento';
+import type { Movimiento } from '~/api/movimiento';
+import * as inventarioAPI from '~/api/inventario';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/inventario";
-import { productosAPI, categoriasAPI, movimientosAPI, inventarioAPI } from "~/api/api";
 import { toast } from 'sonner';
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const defaultTipo = url.searchParams.get("tipo");
 
-  // Optimizador de Rendimiento: Solo se cargan productos y categorías inicialmente.
-  // El historial de movimientos se descarga bajo demanda (Lazy Loading) por producto.
   const [
-    { data: backendProductos },
-    { data: categorias }
+    productosRes,
+    categoriasRes
   ] = await Promise.all([
-    productosAPI.getAll(),
-    categoriasAPI.getAll()
+    productosAPI.get_all(),
+    categoriasAPI.get_all()
   ]);
+
+  if (!productosRes.ok) throw new Error(productosRes.error);
+  if (!categoriasRes.ok) throw new Error(categoriasRes.error);
+
+  const backendProductos = productosRes.data;
+  const categorias = categoriasRes.data;
 
   const filters: Filter[] = [
     {
@@ -36,7 +45,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       type: "combobox",
       columnName: "categoria_nombre",
       placeholder: "Todas las categorías",
-      items: categorias.map(x => x.nombre)
+      items: categorias.map((x: Categoria) => x.nombre)
     },
     {
       type: "combobox",
@@ -47,7 +56,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     }
   ];
 
-  const productos = backendProductos.map(p => {
+  const productos = backendProductos.map((p: Producto) => {
     let estado: "normal" | "warning" | "critical" = "normal";
     if (p.stock_actual <= p.stock_minimo) {
       estado = "critical";
@@ -69,11 +78,10 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const totals = {
     total: productos.length,
-    critical: productos.filter(p => p.estado === 'critical').length,
-    warning: productos.filter(p => p.estado === 'warning').length,
-    normal: productos.filter(p => p.estado === 'normal').length,
+    critical: productos.filter((p: { estado: string }) => p.estado === 'critical').length,
+    warning: productos.filter((p: { estado: string }) => p.estado === 'warning').length,
+    normal: productos.filter((p: { estado: string }) => p.estado === 'normal').length,
   };
-
 
   return {
     productos,
@@ -87,31 +95,30 @@ const columnHelper = createColumnHelper<Producto & { estado: "normal" | "warning
 
 export default function Inventory({ loaderData }: Route.ComponentProps) {
   const [historyProductId, setHistoryProductId] = useState<number | null>(null);
-  const [productHistory, setProductHistory] = useState<any[]>([]);
+  const [productHistory, setProductHistory] = useState<Movimiento[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const totals = {
     total: loaderData.productos.length,
-    critical: loaderData.productos.filter(p => p.estado === 'critical').length,
-    warning: loaderData.productos.filter(p => p.estado === 'warning').length,
-    normal: loaderData.productos.filter(p => p.estado === 'normal').length,
+    critical: loaderData.productos.filter((p: { estado: string }) => p.estado === 'critical').length,
+    warning: loaderData.productos.filter((p: { estado: string }) => p.estado === 'warning').length,
+    normal: loaderData.productos.filter((p: { estado: string }) => p.estado === 'normal').length,
   };
 
-  const historyProduct = loaderData.productos.find(p => p.id_producto === historyProductId);
+  const historyProduct = loaderData.productos.find((p: Producto) => p.id_producto === historyProductId);
 
   // Carga asíncrona optimizada del historial de movimientos por producto
   const handleVerHistorial = async (id: number) => {
     setHistoryProductId(id);
     setProductHistory([]);
     setLoadingHistory(true);
-    try {
-      const { data } = await movimientosAPI.getHistorialPorProducto(id);
-      setProductHistory(data);
-    } catch (error) {
+    const res = await movimientosAPI.get_historial_por_producto(id);
+    if (res.ok) {
+      setProductHistory(res.data);
+    } else {
       toast.error("Error al cargar el historial del producto");
-    } finally {
-      setLoadingHistory(false);
     }
+    setLoadingHistory(false);
   };
 
   const columns = [
@@ -205,19 +212,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
     })
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const result = await inventarioAPI.getHistory(historyProductId!);
-      
-      // setProductHistory(result.data);
-      setLoadingHistory(false);
-      // setOpenHisotry(true);
-    }
-    
-    if (historyProductId !== null) {
-      fetchData();
-    }
-  }, [historyProductId]);
+
 
   function handleHistoryClose() {
     setLoadingHistory(true);
@@ -276,7 +271,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {productHistory.map(m => (
+                  {productHistory.map((m: Movimiento) => (
                     <tr className="border-b border-border/50">
                       <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">
                         {format(m.fecha, 'dd/MM/yy HH:mm', { locale: es })}
