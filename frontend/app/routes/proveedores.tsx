@@ -112,8 +112,8 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
     setEmailDialogOpen(true);
   }
 
-  const errors = fetcher.data && (fetcher.data as any).errors;
-  const generalError = fetcher.data && (fetcher.data as any).error;
+  const errors = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).errors;
+  const generalError = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).error;
 
   function getComplianceColor(rate: number) {
     if (rate >= 90) return 'text-green-600';

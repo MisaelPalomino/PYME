@@ -99,8 +99,8 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
     }*/
   }, [fetcher.state, fetcher.data]);
 
-  const errors = fetcher.data && (fetcher.data as any).errors;
-  const generalError = fetcher.data && (fetcher.data as any).error;
+  const errors = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).errors;
+  const generalError = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).error;
 
   return (
     <div className="space-y-6">

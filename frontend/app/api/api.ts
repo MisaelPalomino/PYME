@@ -8,44 +8,7 @@ export const inventarioAPI = {
   getHistory: async (id_producto: number) => await api.get<HistorialProducto>(`/inventario/historial/${id_producto}`),
 };
 
-export const movimientosAPI = {
-  getAll: async (params: Record<string, any> = {}) => {
-    const res = await api.get<any[]>('/movimientos/', { params });
-    const mapped = res.data.map(m => ({
-      id: m.id_movimiento,
-      producto_nombre: m.producto_nombre || '',
-      tipo_movimiento: (m.tipo_movimiento === 'entrada' || m.tipo_movimiento === 'Entrada') ? 'Entrada' as const : 'Salida' as const,
-      fecha: new Date(m.fecha),
-      cantidad: m.cantidad,
-      observaciones: m.observaciones || '',
-      id_producto: m.id_producto,
-    }));
-    return { data: mapped };
-  },
-  create: async (data: any) => {
-    const backendData = {
-      tipo_movimiento: data.tipo_movimiento.toLowerCase(),
-      cantidad: Number(data.cantidad),
-      observaciones: data.observaciones || '',
-      id_producto: Number(data.id_producto),
-      id_usuario: Number(data.id_usuario),
-    };
-    return await api.post('/movimientos/', backendData);
-  },
-  getHistorialPorProducto: async (id_producto: number) => {
-    const res = await api.get<any[]>(`/movimientos/producto/${id_producto}/`);
-    const mapped = res.data.map(m => ({
-      id: m.id_movimiento,
-      producto_nombre: m.producto_nombre || '',
-      tipo_movimiento: (m.tipo_movimiento === 'entrada' || m.tipo_movimiento === 'Entrada') ? 'Entrada' as const : 'Salida' as const,
-      fecha: new Date(m.fecha),
-      cantidad: m.cantidad,
-      observaciones: m.observaciones || '',
-      id_producto: m.id_producto,
-    }));
-    return { data: mapped };
-  }
-};
+
 
 export const iaAPI = {
   getAll: async () => {

@@ -251,8 +251,8 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     }
   ];
 
-  const errors = fetcher.data && (fetcher.data as any).errors;
-  const generalError = fetcher.data && (fetcher.data as any).error;
+  const errors = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).errors;
+  const generalError = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).error;
 
   return (
     <div className="space-y-6">
