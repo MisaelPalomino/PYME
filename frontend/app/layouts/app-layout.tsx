@@ -1,13 +1,18 @@
-import { Outlet } from "react-router"
+import { Navigate, Outlet } from "react-router"
 import { useState } from "react";
 import { Sidebar } from "~/components/layout/Sidebar";
 import { Header } from "~/components/layout/Header";
 import { useAuth } from "~/context/AuthContext";
+import * as navigation from "~/lib/navigation";
 
 export default function AppLayout() {
+  const { session, logout } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  console.log("PINGAAA");
+
+  if (!session) {
+    return <Navigate to={navigation.login.url} replace />
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -19,6 +24,13 @@ export default function AppLayout() {
       />
 
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
+
+        <Header
+          onMenuClick={() => setMobileOpen(true)}
+          sidebarCollapsed={sidebarCollapsed}
+          currentUser={session}
+          logout={logout}
+        />
         <main className="pt-16 min-h-screen">
           <div className="px-4 py-6 max-w-[100vw] mx-auto">
             <Outlet />
@@ -42,11 +54,6 @@ export default function AppLayout() {
       />
 
       <div className={`transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'}`}>
-        <Header
-          onMenuClick={() => setMobileOpen(true)}
-          sidebarCollapsed={sidebarCollapsed}
-          currentUser={user ? { name: user.nombre, role: user.rol } : { name: "Invitado", role: "Sin rol" }}
-        />
 
         <main className="pt-16 min-h-screen">
           <div className="px-4 py-6 max-w-[1600px] mx-auto">

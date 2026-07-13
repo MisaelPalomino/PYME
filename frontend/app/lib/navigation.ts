@@ -21,9 +21,9 @@ type NavigationItem = {
 
 // Sirve para mostrar (o no) secciones del sistema.
 // @see frontend/app/components/Sidebar 
-export const navigation: NavigationItem[] = [
+export const pages: NavigationItem[] = [
   {
-    url: "/",
+    url: "dashboard",
     path: "routes/home.tsx",
     label: "Dashboard",
     icon: LayoutDashboard,
@@ -83,3 +83,9 @@ export const navigation: NavigationItem[] = [
     icon: Brain,
   }
 ];
+
+export const dashboard_url = pages[0].url;
+export const login = {
+  url: "/",
+  path: "routes/login.tsx"
+};

@@ -1,9 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ProductoSchema } from '~/lib/schemas/producto.schema';
 import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
-import { productosAPI, categoriasAPI, proveedoresAPI, type ProductoDTO } from '~/api/api';
-import type { Categoria, Producto } from '~/api/types';
 import { Button } from '~/components/ui/button';
 import type { Route } from "./+types/productos";
 import { Edit2, Plus, Trash2 } from 'lucide-react';
@@ -15,6 +12,9 @@ import { Input } from '~/components/ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { formatApiError } from '~/lib/utils';
+import * as productosAPI from '~/api/producto';
+import * as categoriasAPI from '~/api/categoria';
+import * as proveedoresAPI from '~/api/proveedor';
 
 type ProductoFormData = {
   nombre: string;
@@ -28,7 +28,7 @@ type ProductoFormData = {
   id_proveedor_principal: string;
 }
 
-const columnHelper = createColumnHelper<Producto>();
+const columnHelper = createColumnHelper<productosAPI.Producto>();
 
 export async function loader() {
   const [
@@ -36,7 +36,7 @@ export async function loader() {
     { data: categorias },
     { data: proveedores }
   ] = await Promise.all([
-    productosAPI.getAll(),
+    productosAPI.get_all(),
     categoriasAPI.getAll(),
     proveedoresAPI.getAll()
   ]);

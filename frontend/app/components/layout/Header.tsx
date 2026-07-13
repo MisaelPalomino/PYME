@@ -1,13 +1,16 @@
 import { Menu, Bell, User, LogOut, ChevronDown } from 'lucide-react';
 import { useState } from "react";
+import { toast } from 'sonner';
+import * as api from '~/api/login';
 
 type HeaderProps = {
+  logout: () => void,
   onMenuClick: () => void,
   sidebarCollapsed: boolean,
-  currentUser: { name: string; role: string }
+  currentUser: api.LoginResponse,
 };
 
-export function Header({ onMenuClick, sidebarCollapsed, currentUser }: HeaderProps) {
+export function Header({ onMenuClick, sidebarCollapsed, currentUser, logout }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUser, setShowUser] = useState(false);
   // const unreadCount = systemAlerts.filter(a => !a.read).length;
@@ -17,6 +20,19 @@ export function Header({ onMenuClick, sidebarCollapsed, currentUser }: HeaderPro
     warning: 'bg-yellow-500',
     info: 'bg-blue-500',
   };
+
+  async function handleLogOut() {
+    const response = await api.logout({
+      access: currentUser.access,
+      refresh: currentUser.refresh
+    });
+
+    if (response.ok) {
+      logout();
+    } else {
+      toast.error(response.error);
+    }
+  }
 
   return (
     <header
@@ -81,8 +97,8 @@ export function Header({ onMenuClick, sidebarCollapsed, currentUser }: HeaderPro
             <User className="w-4 h-4 text-primary-foreground" />
           </div>
           <div className="hidden sm:block text-left">
-            <p className="text-xs text-foreground leading-none">{currentUser.name}</p>
-            <p className="text-xs text-muted-foreground">{currentUser.role}</p>
+            <p className="text-xs text-foreground leading-none">{currentUser.usuario.username}</p>
+            <p className="text-xs text-muted-foreground">{currentUser.usuario.rol}</p>
           </div>
           <ChevronDown className="w-3 h-3 text-muted-foreground hidden sm:block" />
         </button>
@@ -90,10 +106,11 @@ export function Header({ onMenuClick, sidebarCollapsed, currentUser }: HeaderPro
         {showUser && (
           <div className="absolute right-0 top-12 w-48 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
             <div className="px-4 py-3 border-b border-border">
-              <p className="text-sm text-foreground">{currentUser.name}</p>
-              <p className="text-xs text-muted-foreground">{currentUser.role}</p>
+              <p className="text-sm text-foreground">{currentUser.usuario.nombre}</p>
+              <p className="text-xs text-muted-foreground">{currentUser.usuario.rol}</p>
+              <p className="text-xs text-muted-foreground">{currentUser.usuario.email}</p>
             </div>
-            <button className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-accent/50 transition-colors">
+            <button className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-destructive hover:bg-accent/50 transition-colors" onClick={handleLogOut}>
               <LogOut className="w-4 h-4" />
               Cerrar sesión
             </button>

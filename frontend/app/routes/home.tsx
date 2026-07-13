@@ -1,7 +1,6 @@
-import { dashboardAPI } from "~/api/api";
-import * as apiTypes from "~/api/types";
 import type { Route } from "./+types/home";
 import { es } from "date-fns/locale";
+import * as api from "~/api/dashboard";
 import { format } from "date-fns";
 import { Button } from "~/components/ui/button";
 import { AlertCircle, Boxes, CircleX, Clock, Download, Package, RefreshCw, ShoppingCart, TrendingUp, Truck } from "lucide-react";
@@ -13,12 +12,16 @@ import { Badge } from "~/components/ui/badge";
 import { Link, useNavigate } from "react-router";
 
 export async function loader() {
-  const response = await dashboardAPI.getAll();
+  const response = await api.dashboard();
+  if (!response.ok) {
+    // TODO: Ni idea que hacer con el error
+    throw response.error;
+  }
 
   return response.data;
 }
 
-function buildKpis(resumen: apiTypes.Dashboard["resumen"]) {
+function buildKpis(resumen: api.Response["resumen"]) {
   return [
     {
       label: "Ventas del mes",
@@ -73,7 +76,7 @@ function buildKpis(resumen: apiTypes.Dashboard["resumen"]) {
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const kpis = buildKpis(loaderData.resumen);
   const chartData = loaderData.ventas_diarias.map((v) => ({
     dia: new Date(v.dia).toLocaleDateString("es-PE", {

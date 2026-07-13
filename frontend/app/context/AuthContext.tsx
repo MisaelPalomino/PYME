@@ -1,67 +1,62 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import * as api from "~/api/login";
 
-interface User {
-  id: number;
-  nombre: string;
-  email: string;
-  rol: string;
-}
+const COOKIE_KEY = "session";
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
-  logout: () => void;
-  isAuthenticated: boolean;
+type AuthContextType = {
+  login: (session: api.LoginResponse) => void,
+  logout: () => void,
+  session: api.LoginResponse | null,
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const USUARIO_SIMULADO: User = {
-  id: 1,
-  nombre: 'Juan Pérez',
-  email: 'admin@email.com',
-  rol: 'Administrador',
-};
+/*
+TODO
+[nonuya] 12/07/2026
+Acá hay un """""error""""" que debería (o no) verse.
+La cuestión es que estoy guardando todo en el localStorage. Cosa que creo no debería hacerse.
+Siento que se tiene que separar los tokens con la información del Usuario, tal vez con diferentes llamadas al API o yo que sé.
+La cuestión es que como no sé hacer esto lo dejo acá.
+¿Qué de malo tiene? Dibuja la pantalla de login y luego redirecciona hacia donde debería ser.
+Personalmente no me gusta.
+Si alguien encuentra otra solución sería genial!
+Tal vez Cookies¿???¡???¡¡?
+*/
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<api.LoginResponse | null>(null);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const login = async (email: string, password: string): Promise<User> => {
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (email === 'admin@email.com' && password === 'admin123') {
-      setUser(USUARIO_SIMULADO);
-      setLoading(false);
-      return USUARIO_SIMULADO;
-    } else {
-      setLoading(false);
-      throw new Error('Credenciales incorrectas');
+  useEffect(() => {
+    const session = localStorage.getItem(COOKIE_KEY);
+    if (session) {
+      setSession(JSON.parse(session) as api.LoginResponse);
     }
+  }, []);
+
+  const login = (session: api.LoginResponse) => {
+    setSession(session);
+    localStorage.setItem(COOKIE_KEY, JSON.stringify(session));
   };
 
   const logout = () => {
-    setUser(null);
+    setSession(null);
+    localStorage.removeItem(COOKIE_KEY);
   };
 
   const value: AuthContextType = {
-    user,
-    loading,
+    session,
     login,
     logout,
-    isAuthenticated: !!user,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth debe usarse dentro de AuthProvider');
   }
   return context;
-};
+}
