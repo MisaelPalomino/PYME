@@ -1,6 +1,8 @@
 // Archivo para pruebas de UI 
 
-import type { Categoria, Movimiento, Producto } from "./api/types";
+import type { Categoria } from "./api/categoria";
+import type { Producto } from "./api/producto";
+import type { Movimiento } from "./api/types";
 
 export const mockMovimientos: Movimiento[] = [
   {

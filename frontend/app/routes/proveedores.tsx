@@ -8,16 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
-import { proveedoresAPI } from '~/api/api';
-import type { Proveedor } from '~/api/types';
-import { ProveedorSchema } from '~/lib/schemas/proveedor.schema';
+import * as proveedoresAPI from '~/api/proveedor';
+import { ProveedorSchema, type Proveedor } from '~/api/proveedor';
 import { createColumnHelper } from '@tanstack/react-table';
 import { TableCard, type Filter } from '~/components/Table';
 import { Badge } from '~/components/ui/badge';
 import { toast } from 'sonner';
 
 export async function loader({ }: Route.LoaderArgs) {
-  const response = await proveedoresAPI.getAll();
+  const response = await proveedoresAPI.get_all();
+  if (!response.ok) throw new Error(response.error);
   return {
     proveedores: response.data
   };
@@ -200,7 +200,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
                 </div>
 
                 <div className="flex flex-wrap gap-1">
-                  {item.categorias.map(c => (
+                  {item.categorias.map((c: { nombre: string; id_categoria: number }) => (
                     <Badge key={c.id_categoria} variant="outline" className="text-xs">{c.nombre}</Badge>
                   ))}
                   {item.categorias.length > 3 && (
@@ -345,12 +345,11 @@ export async function action({ request }: ActionFunctionArgs) {
     if (isNaN(id)) {
       return { error: "ID de proveedor inválido" };
     }
-    try {
-      await proveedoresAPI.delete(id);
+    const res = await proveedoresAPI.delete(id);
+    if (res.ok) {
       return { success: true };
-    } catch (error) {
-      console.error(error);
-      return { error: "Error al eliminar el proveedor" };
+    } else {
+      return { error: res.error };
     }
   }
 
@@ -362,15 +361,13 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const editId = submission.editId ? Number(submission.editId) : null;
-  try {
-    if (editId) {
-      await proveedoresAPI.update(editId, result.data);
-    } else {
-      await proveedoresAPI.create(result.data);
-    }
+  const res = editId
+    ? await proveedoresAPI.update(editId, result.data)
+    : await proveedoresAPI.create(result.data);
+
+  if (res.ok) {
     return { success: true };
-  } catch (error) {
-    console.error(error);
-    return { error: "Error al comunicarse con el servidor" };
+  } else {
+    return { error: res.error };
   }
 }

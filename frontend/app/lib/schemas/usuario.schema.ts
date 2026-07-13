@@ -1,10 +1,12 @@
 import { z } from "zod";
 
+const ROLES = ['Administrador', 'Gerente', 'Almacenero', 'Comprador'] as const;
+
 export const UsuarioSchema = z.object({
   username: z.string().min(3, "El nombre de usuario debe tener al menos 3 caracteres"),
   email: z.string().email("El correo electrónico no es válido"),
   nombre: z.string().min(3, "El nombre completo es requerido"),
-  rol: z.enum(['Administrador', 'Gerente', 'Almacenero', 'Comprador'], {
+  rol: z.enum(ROLES, {
     errorMap: () => ({ message: "Selecciona un rol válido" })
   }),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
@@ -18,7 +20,7 @@ export const UsuarioEditSchema = z.object({
   username: z.string().min(3, "El nombre de usuario debe tener al menos 3 caracteres"),
   email: z.string().email("El correo electrónico no es válido"),
   nombre: z.string().min(3, "El nombre completo es requerido"),
-  rol: z.enum(['Administrador', 'Gerente', 'Almacenero', 'Comprador'], {
+  rol: z.enum(ROLES, {
     errorMap: () => ({ message: "Selecciona un rol válido" })
   }),
 });
