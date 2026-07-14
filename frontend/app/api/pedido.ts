@@ -1,7 +1,28 @@
 import axios from "axios";
 import { axios_call_to_result } from "~/lib/result";
 import { z } from "zod";
-import type { Pedido as BackendPedido } from "./types";
+export type DetallePedido = {
+  id_detalle?: number;
+  id_producto: number;
+  producto_nombre?: string;
+  cantidad: number;
+  precio_unitario: number;
+};
+
+export type BackendPedido = {
+  id_pedido: number;
+  id_proveedor: number;
+  proveedor_nombre?: string;
+  id_usuario: number;
+  usuario_nombre?: string;
+  estado: "pendiente" | "enviado" | "recibido" | "cancelado";
+  fecha_creacion: string;
+  fecha_envio?: string;
+  fecha_recepcion?: string;
+  fecha_esperada?: string;
+  detalles: DetallePedido[];
+  total: string | number;
+};
 
 const api = axios.create({
   baseURL: "http://localhost:8000/api/pedidos",

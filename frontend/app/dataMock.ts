@@ -2,7 +2,7 @@
 
 import type { Categoria } from "./api/categoria";
 import type { Producto } from "./api/producto";
-import type { Movimiento } from "./api/types";
+import type { Movimiento } from "./api/movimiento";
 
 export const mockMovimientos: Movimiento[] = [
   {
