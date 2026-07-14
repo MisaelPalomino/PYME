@@ -12,8 +12,10 @@ import { es } from 'date-fns/locale';
 import { useFetcher } from 'react-router';
 import type { ActionFunctionArgs } from 'react-router';
 import type { Route } from './+types/pedidos';
-import { pedidosAPI, productosAPI, proveedoresAPI } from '~/api/api';
-import { PedidoSchema } from '~/lib/schemas/pedido.schema';
+import * as pedidosAPI from '~/api/pedido';
+import { PedidoSchema } from '~/api/pedido';
+import * as productosAPI from '~/api/producto';
+import * as proveedoresAPI from '~/api/proveedor';
 import { toast } from 'sonner';
 
 const statusConfig = {
@@ -43,19 +45,23 @@ type Order = {
 
 export async function loader() {
   const [
-    { data: backendPedidos },
-    { data: productos },
-    { data: proveedores }
+    pedidosRes,
+    productosRes,
+    proveedoresRes
   ] = await Promise.all([
-    pedidosAPI.getAll(),
-    productosAPI.getAll(),
-    proveedoresAPI.getAll()
+    pedidosAPI.get_all(),
+    productosAPI.get_all(),
+    proveedoresAPI.get_all()
   ]);
 
+  if (!pedidosRes.ok) throw new Error(pedidosRes.error);
+  if (!productosRes.ok) throw new Error(productosRes.error);
+  if (!proveedoresRes.ok) throw new Error(proveedoresRes.error);
+
   return {
-    backendPedidos,
-    productos,
-    proveedores
+    pedidos: pedidosRes.data,
+    productos: productosRes.data,
+    proveedores: proveedoresRes.data
   };
 }
 
@@ -66,38 +72,23 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (intent === 'delete') {
     const id = Number(submission.id_pedido);
-    try {
-      await pedidosAPI.delete(id);
-      return { success: true };
-    } catch (error: any) {
-      console.error(error);
-      return { error: error.response?.data?.error || 'Error al cancelar el pedido' };
-    }
+    const res = await pedidosAPI.delete(id);
+    return res.ok ? { success: true } : { error: res.error };
   }
 
   if (intent === 'send') {
     const id = Number(submission.id_pedido);
-    try {
-      await pedidosAPI.updateEstado(id, 'enviado');
-      return { success: true };
-    } catch (error: any) {
-      console.error(error);
-      return { error: error.response?.data?.error || 'Error al enviar el pedido' };
-    }
+    const res = await pedidosAPI.updateEstado(id, 'enviado');
+    return res.ok ? { success: true } : { error: res.error };
   }
 
   if (intent === 'receive') {
     const id = Number(submission.id_pedido);
-    try {
-      await pedidosAPI.recibir(id);
-      return { success: true };
-    } catch (error: any) {
-      console.error(error);
-      return { error: error.response?.data?.error || 'Error al recibir el pedido' };
-    }
+    const res = await pedidosAPI.recibir(id);
+    return res.ok ? { success: true } : { error: res.error };
   }
 
-  // Validaciones con Zod
+  // Validaciones con Zod (ahora importado desde la API)
   const result = PedidoSchema.safeParse(submission);
   if (!result.success) {
     return { errors: result.error.flatten().fieldErrors };
@@ -115,18 +106,14 @@ export async function action({ request }: ActionFunctionArgs) {
     ]
   };
 
-  try {
-    if (intent === 'edit') {
-      const editId = Number(submission.editId);
-      await pedidosAPI.delete(editId);
-      await pedidosAPI.create(payload);
-    } else {
-      await pedidosAPI.create(payload);
-    }
-    return { success: true };
-  } catch (error: any) {
-    return { error: error.response?.data?.error || 'Error al comunicarse con el servidor' };
+  if (intent === 'edit') {
+    const editId = Number(submission.editId);
+    const delRes = await pedidosAPI.delete(editId);
+    if (!delRes.ok) return { error: delRes.error };
   }
+
+  const createRes = await pedidosAPI.create(payload);
+  return createRes.ok ? { success: true } : { error: createRes.error };
 }
 
 export default function Orders({ loaderData }: Route.ComponentProps) {
@@ -157,34 +144,7 @@ export default function Orders({ loaderData }: Route.ComponentProps) {
   }));
 
   // Mapear pedidos desde el backend al tipo local
-  const orders: Order[] = loaderData.backendPedidos.map(o => {
-    const firstDetail = o.detalles && o.detalles.length > 0 ? o.detalles[0] : null;
-    const productName = firstDetail ? firstDetail.producto_nombre || 'Producto' : 'Sin productos';
-    const sku = firstDetail ? firstDetail.id_producto.toString() : '';
-
-    const product = loaderData.productos.find(p => p.id_producto === firstDetail?.id_producto);
-    const realProductName = product ? product.nombre : productName;
-    const realSku = product ? product.sku : sku;
-
-    const expectedDate = o.fecha_esperada ? new Date(o.fecha_esperada) : (o.fecha_envio ? new Date(o.fecha_envio) : new Date(o.fecha_creacion));
-
-    return {
-      id: o.id_pedido.toString(),
-      productId: firstDetail ? firstDetail.id_producto.toString() : '',
-      productName: realProductName,
-      sku: realSku,
-      supplierId: o.id_proveedor.toString(),
-      supplierName: o.proveedor_nombre || 'Proveedor',
-      quantity: firstDetail ? firstDetail.cantidad : 0,
-      status: o.estado as 'pendiente' | 'enviado' | 'recibido' | 'cancelado',
-      createdAt: new Date(o.fecha_creacion),
-      expectedDate: expectedDate,
-      userId: o.id_usuario.toString(),
-      userName: o.usuario_nombre || 'Usuario',
-      unitPrice: firstDetail ? Number(firstDetail.precio_unitario) : 0,
-      receivedDate: o.fecha_recepcion ? new Date(o.fecha_recepcion) : undefined,
-    };
-  });
+  const orders: Order[] = loaderData.pedidos;
 
   const filtered = orders.filter(o => {
     const matchSearch = o.productName.toLowerCase().includes(search.toLowerCase()) || o.id.toLowerCase().includes(search.toLowerCase());
