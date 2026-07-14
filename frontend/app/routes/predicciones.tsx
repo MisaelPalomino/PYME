@@ -11,16 +11,15 @@ import { createSortableHeader, TableList, type Filter } from '~/components/Table
 import type { Route } from "./+types/predicciones";
 import { useFetcher } from "react-router";
 import * as iaAPI from "~/api/ia";
-import type { ActionFunctionArgs } from "react-router";
 import type { Prediccion } from '~/api/ia';
 
-export async function loader() {
+export async function clientLoader() {
   const res = await iaAPI.get_all();
   if (!res.ok) throw new Error(res.error);
   return { predictions: res.data };
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 

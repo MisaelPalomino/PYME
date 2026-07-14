@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
 import { Button } from '~/components/ui/button';
 import type { Route } from "./+types/productos";
@@ -31,7 +30,7 @@ type ProductoFormData = {
 
 const columnHelper = createColumnHelper<productosAPI.Producto>();
 
-export async function loader() {
+export async function clientLoader() {
   const [
     productosRes,
     categoriasRes,
@@ -449,7 +448,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
   );
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
   const intent = submission.intent;

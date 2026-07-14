@@ -16,7 +16,7 @@ import * as categoriasAPI from '~/api/categoria';
 import * as informesAPI from '~/api/informe';
 import { toast } from 'sonner';
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const url = new URL(request.url);
   const categoria = url.searchParams.get('categoria') || 'all';
   const periodo = url.searchParams.get('periodo') || 'month';
@@ -167,7 +167,7 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
           { id: 'low_stock', label: 'Bajo Stock' },
           { id: 'rotation', label: 'Rotación' },
           { id: 'consolidated', label: 'Consolidado' },
-          { id: 'charts', label: 'Gráficos Compras/Ventas' },
+          { id: 'charts', label: 'Gráticos Compras/Ventas' },
         ].map(tab => (
           <button
             key={tab.id}

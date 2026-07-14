@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useFetcher } from 'react-router';
-import type { ActionFunctionArgs } from 'react-router';
 import type { Route } from './+types/usuarios';
 import * as usuariosAPI from '~/api/usuario';
 import { UsuarioSchema } from '~/api/usuario';
@@ -33,13 +32,13 @@ const rolePermissions: Record<Role, string[]> = {
   Comprador: ['Dashboard', 'Inventario', 'Alertas', 'Pedidos', 'Proveedores'],
 };
 
-export async function loader() {
+export async function clientLoader() {
   const res = await usuariosAPI.get_all();
   if (!res.ok) throw new Error(res.error);
   return { usuarios: res.data };
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
   const intent = submission.intent;

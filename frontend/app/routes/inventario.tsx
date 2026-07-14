@@ -17,7 +17,7 @@ import { createSortableHeader, TableList, type Filter } from '~/components/Table
 import type { Route } from "./+types/inventario";
 import { toast } from 'sonner';
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const url = new URL(request.url);
   const defaultTipo = url.searchParams.get("tipo");
 

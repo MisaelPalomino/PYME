@@ -11,7 +11,7 @@ import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, X
 import { Badge } from "~/components/ui/badge";
 import { Link, useNavigate } from "react-router";
 
-export async function loader() {
+export async function clientLoader() {
   const response = await api.dashboard();
   if (!response.ok) {
     // TODO: Ni idea que hacer con el error
@@ -394,6 +394,6 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </Card>
         </div>
       </div>
-    </div >
+    </div>
   );
 }

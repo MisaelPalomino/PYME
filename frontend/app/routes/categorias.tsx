@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
 import * as categoriasAPI from '~/api/categoria';
 import { CategoriaSchema, type Categoria } from '~/api/categoria';
@@ -15,7 +14,7 @@ import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
 import { toast } from 'sonner';
 
-export async function loader() {
+export async function clientLoader() {
   const response = await categoriasAPI.get_all();
   if (!response.ok) throw new Error(response.error);
   return {
@@ -222,7 +221,7 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
   );
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
   const intent = submission.intent;

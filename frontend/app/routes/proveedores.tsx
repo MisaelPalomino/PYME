@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
 import { Plus, Edit2, Trash2, Mail, Phone, Clock, FileText } from 'lucide-react';
 import type { Route } from "./+types/proveedores";
@@ -15,7 +14,7 @@ import { TableCard, type Filter } from '~/components/Table';
 import { Badge } from '~/components/ui/badge';
 import { toast } from 'sonner';
 
-export async function loader() {
+export async function clientLoader() {
   const response = await proveedoresAPI.get_all();
   if (!response.ok) throw new Error(response.error);
   return {
@@ -335,7 +334,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
   );
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
   const intent = submission.intent;

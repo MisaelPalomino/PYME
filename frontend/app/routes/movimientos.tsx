@@ -9,7 +9,7 @@ import type { Producto } from '~/api/producto';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
-import { useFetcher, type ActionFunctionArgs } from "react-router";
+import { useFetcher } from "react-router";
 import { useAuth } from '~/context/AuthContext';
 import { toast } from 'sonner';
 
@@ -19,7 +19,7 @@ import { es } from 'date-fns/locale';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/movimientos";
 
-export async function loader() {
+export async function clientLoader() {
   const [
     movimientosRes,
     productosRes
@@ -270,7 +270,7 @@ export default function Movements({ loaderData }: Route.ComponentProps) {
   );
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
 

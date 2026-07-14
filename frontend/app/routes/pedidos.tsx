@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useFetcher } from 'react-router';
-import type { ActionFunctionArgs } from 'react-router';
 import type { Route } from './+types/pedidos';
 import * as pedidosAPI from '~/api/pedido';
 import { PedidoSchema } from '~/api/pedido';
@@ -43,7 +42,7 @@ type Order = {
   receivedDate?: Date;
 };
 
-export async function loader() {
+export async function clientLoader() {
   const [
     pedidosRes,
     productosRes,
@@ -65,7 +64,7 @@ export async function loader() {
   };
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
   const intent = submission.intent;
@@ -180,6 +179,7 @@ export default function Orders({ loaderData }: Route.ComponentProps) {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function handleCancelOrder(id: string) {
     if (confirm('¿Estás seguro de cancelar este pedido?')) {
       fetcher.submit(
