@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit2, UserCheck, UserX, Shield } from 'lucide-react';
 import { Card, CardContent } from '~/components/ui/card';
 import { Badge } from '~/components/ui/badge';
@@ -12,30 +12,10 @@ import { es } from 'date-fns/locale';
 import { useFetcher } from 'react-router';
 import type { ActionFunctionArgs } from 'react-router';
 import type { Route } from './+types/usuarios';
-import { usuariosAPI } from '~/api/api';
+import * as usuariosAPI from '~/api/usuario';
+import { UsuarioSchema } from '~/api/usuario';
+import type { Role, User } from '~/api/usuario';
 import { toast } from 'sonner';
-
-type Role = 'Administrador' | 'Gerente' | 'Almacenero' | 'Comprador';
-
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  active: boolean;
-  createdAt: Date;
-  lastLogin: Date;
-};
-
-type UserItemBackend = {
-  id_usuario: number;
-  username: string;
-  nombre: string;
-  email: string;
-  rol: string;
-  activo: boolean;
-  fecha_creacion: string;
-};
 
 const roles: Role[] = ['Administrador', 'Gerente', 'Almacenero', 'Comprador'];
 
@@ -54,8 +34,9 @@ const rolePermissions: Record<Role, string[]> = {
 };
 
 export async function loader() {
-  const { data: usuarios } = await usuariosAPI.getAll();
-  return { usuarios: usuarios as UserItemBackend[] };
+  const res = await usuariosAPI.get_all();
+  if (!res.ok) throw new Error(res.error);
+  return { usuarios: res.data };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -65,69 +46,48 @@ export async function action({ request }: ActionFunctionArgs) {
 
   if (intent === 'delete') {
     const id = Number(submission.id_usuario);
-    try {
-      await usuariosAPI.delete(id);
-      return { success: true };
-    } catch (e: any) {
-      return { error: e.response?.data?.detail || 'Error al desactivar el usuario' };
-    }
+    const res = await usuariosAPI.delete_usuario(id);
+    return res.ok ? { success: true } : { error: res.error };
   }
 
   if (intent === 'activate') {
     const id = Number(submission.id_usuario);
-    try {
-      const { data: currentUser } = await usuariosAPI.getOne(id);
-      await usuariosAPI.update(id, {
-        username: currentUser.username,
-        nombre: currentUser.nombre,
-        email: currentUser.email,
-        rol: currentUser.rol,
-        activo: true
-      });
-      return { success: true };
-    } catch (e: any) {
-      return { error: 'Error al activar el usuario' };
-    }
+    const getRes = await usuariosAPI.get_one(id);
+    if (!getRes.ok) return { error: getRes.error };
+    const currentUser = getRes.data;
+
+    const res = await usuariosAPI.update(id, {
+      username: currentUser.username,
+      nombre: currentUser.nombre,
+      email: currentUser.email,
+      rol: currentUser.rol,
+      activo: true
+    });
+    return res.ok ? { success: true } : { error: res.error };
   }
 
   const isEdit = intent === 'edit';
-  const email = submission.email.toString();
-  const name = submission.name.toString();
-  const role = submission.role.toString();
 
-  if (!name || name.trim().length < 3) {
-    return { errors: { name: ['El nombre completo debe tener al menos 3 caracteres'] } };
-  }
-  if (!email || !email.includes('@')) {
-    return { errors: { email: ['El correo electrónico no es válido'] } };
+  const result = UsuarioSchema.safeParse(submission);
+  if (!result.success) {
+    return { errors: result.error.flatten().fieldErrors };
   }
 
-  try {
-    if (isEdit) {
-      const editId = Number(submission.editId);
-      const payload = {
-        username: email.split('@')[0],
-        nombre: name,
-        email: email,
-        rol: role,
-        activo: submission.active === 'true'
-      };
-      await usuariosAPI.update(editId, payload);
-    } else {
-      const payload = {
-        username: email.split('@')[0],
-        nombre: name,
-        email: email,
-        rol: role,
-        password: 'PymePass123!',
-        password2: 'PymePass123!'
-      };
-      await usuariosAPI.create(payload);
-    }
-    return { success: true };
-  } catch (e: any) {
-    return { error: e.response?.data?.username?.[0] || e.response?.data?.detail || 'Error al comunicarse con el servidor' };
-  }
+  const { name, email, role, active } = result.data;
+
+  const payload = {
+    username: email.split('@')[0],
+    nombre: name,
+    email: email,
+    rol: role,
+    ...(isEdit ? { activo: active } : { password: 'PymePass123!', password2: 'PymePass123!' })
+  };
+
+  const res = isEdit
+    ? await usuariosAPI.update(Number(submission.editId), payload)
+    : await usuariosAPI.create(payload);
+
+  return res.ok ? { success: true } : { error: res.error };
 }
 
 export default function Users({ loaderData }: Route.ComponentProps) {
@@ -149,17 +109,7 @@ export default function Users({ loaderData }: Route.ComponentProps) {
     }
   }, [fetcher.state, fetcher.data]);
 
-  const usersList: User[] = useMemo(() => {
-    return loaderData.usuarios.map(u => ({
-      id: u.id_usuario.toString(),
-      name: u.nombre,
-      email: u.email,
-      role: u.rol as Role,
-      active: u.activo,
-      createdAt: new Date(u.fecha_creacion),
-      lastLogin: new Date(u.fecha_creacion)
-    }));
-  }, [loaderData.usuarios]);
+  const usersList = loaderData.usuarios;
 
   function openCreate() {
     setEditing(null);
@@ -188,19 +138,19 @@ export default function Users({ loaderData }: Route.ComponentProps) {
   }
 
   function toggleActive(id: string) {
-    const user = loaderData.usuarios.find(u => u.id_usuario.toString() === id);
+    const user = loaderData.usuarios.find(u => u.id === id);
     if (!user) return;
 
     fetcher.submit(
       { 
-        intent: user.activo ? 'delete' : 'activate', 
+        intent: user.active ? 'delete' : 'activate', 
         id_usuario: id 
       },
       { method: 'post' }
     );
   }
 
-  const errors = fetcher.data && (fetcher.data as any).errors;
+  const errors = (fetcher.data as { errors?: Record<string, string[]> })?.errors;
 
   return (
     <div className="space-y-6">

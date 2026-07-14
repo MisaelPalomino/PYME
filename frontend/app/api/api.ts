@@ -50,24 +50,3 @@ export const informesAPI = {
   }
 };
 
-
-export const usuariosAPI = {
-  getAll: async () => {
-    return await api.get<any[]>('/auth/usuarios/');
-  },
-  getOne: async (id: number) => {
-    return await api.get<any>(`/auth/usuarios/${id}/`);
-  },
-  create: async (data: any) => {
-    return await api.post('/auth/usuarios/', data);
-  },
-  update: async (id: number, data: any) => {
-    return await api.put(`/auth/usuarios/${id}/`, data);
-  },
-  delete: async (id: number) => {
-    return await api.delete(`/auth/usuarios/${id}/`);
-  },
-  cambiarPassword: async (id: number, data: any) => {
-    return await api.post(`/auth/usuarios/${id}/cambiar_password/`, data);
-  }
-};

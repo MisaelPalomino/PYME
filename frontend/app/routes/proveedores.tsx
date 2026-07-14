@@ -15,7 +15,7 @@ import { TableCard, type Filter } from '~/components/Table';
 import { Badge } from '~/components/ui/badge';
 import { toast } from 'sonner';
 
-export async function loader({ }: Route.LoaderArgs) {
+export async function loader() {
   const response = await proveedoresAPI.get_all();
   if (!response.ok) throw new Error(response.error);
   return {

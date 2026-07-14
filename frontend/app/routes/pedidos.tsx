@@ -249,7 +249,7 @@ Departamento de Compras — StockMaster Pro`;
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const errors = fetcher.data && (fetcher.data as any).errors;
+  const errors = (fetcher.data as { errors?: Record<string, string[]> })?.errors;
 
   return (
     <div className="space-y-6">

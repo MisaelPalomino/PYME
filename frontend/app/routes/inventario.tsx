@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState } from 'react';
 import { History } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -12,7 +12,7 @@ import * as categoriasAPI from '~/api/categoria';
 import type { Categoria } from '~/api/categoria';
 import * as movimientosAPI from '~/api/movimiento';
 import type { Movimiento } from '~/api/movimiento';
-import * as inventarioAPI from '~/api/inventario';
+
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/inventario";
 import { toast } from 'sonner';
@@ -98,12 +98,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
   const [productHistory, setProductHistory] = useState<Movimiento[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const totals = {
-    total: loaderData.productos.length,
-    critical: loaderData.productos.filter((p: { estado: string }) => p.estado === 'critical').length,
-    warning: loaderData.productos.filter((p: { estado: string }) => p.estado === 'warning').length,
-    normal: loaderData.productos.filter((p: { estado: string }) => p.estado === 'normal').length,
-  };
+
 
   const historyProduct = loaderData.productos.find((p: Producto) => p.id_producto === historyProductId);
 
@@ -214,11 +209,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 
 
 
-  function handleHistoryClose() {
-    setLoadingHistory(true);
-    setHistoryProductId(null);
-    // setOpenHistory(false);
-  }
+
 
   return (
     <div className="space-y-6">
@@ -272,17 +263,17 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
                 </thead>
                 <tbody>
                   {productHistory.map((m: Movimiento) => (
-                    <tr className="border-b border-border/50">
+                    <tr key={m.id} className="border-b border-border/50">
                       <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">
                         {format(m.fecha, 'dd/MM/yy HH:mm', { locale: es })}
                       </td>
                       <td className="py-2 pr-3 text-center">
-                        <Badge variant={m.tipo_movimiento === "entrada" ? 'outline' : 'secondary'} className="text-xs">
+                        <Badge variant={m.tipo_movimiento === "Entrada" ? 'outline' : 'secondary'} className="text-xs">
                           {m.tipo_movimiento}
                         </Badge>
                       </td>
-                      <td className={`py-2 pr-3 text-center font-medium ${m.tipo_movimiento === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>
-                        {m.tipo_movimiento === 'entrada' ? '+' : '-'}{m.cantidad}
+                      <td className={`py-2 pr-3 text-center font-medium ${m.tipo_movimiento === 'Entrada' ? 'text-green-600' : 'text-red-600'}`}>
+                        {m.tipo_movimiento === 'Entrada' ? '+' : '-'}{m.cantidad}
                       </td>
                       <td className="py-2 text-muted-foreground">{m.observaciones}</td>
                     </tr>

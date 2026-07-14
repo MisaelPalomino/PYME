@@ -18,10 +18,12 @@ export async function axios_call_to_result<T>(f: () => Promise<AxiosResponse<T>>
     // FIXME: THIS
     if (axios.isAxiosError(error)) {
       const data = error.response?.data;
+      const detail = data && typeof data === 'object' && 'detail' in data ? (data as Record<string, unknown>).detail : undefined;
+      const message = detail || error.message || "Error de red o conexión con el servidor";
 
       return {
         ok: false,
-        error: "(Que backend retorne buenos errores mrd) " + data.detail
+        error: "(Que backend retorne buenos errores mrd) " + message
       };
     }
 

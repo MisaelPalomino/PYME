@@ -11,7 +11,7 @@ import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
 import { toast } from 'sonner';
 import * as productosAPI from '~/api/producto';
-import { ProductoSchema, type Producto, type ProductoDTO } from '~/api/producto';
+import { ProductoSchema, type Producto } from '~/api/producto';
 import * as categoriasAPI from '~/api/categoria';
 import type { Categoria } from '~/api/categoria';
 import * as proveedoresAPI from '~/api/proveedor';

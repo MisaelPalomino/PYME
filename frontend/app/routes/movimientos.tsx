@@ -9,9 +9,15 @@ import type { Producto } from '~/api/producto';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
-import type { ActionFunctionArgs } from "react-router";
+import { useFetcher, type ActionFunctionArgs } from "react-router";
 import { useAuth } from '~/context/AuthContext';
 import { toast } from 'sonner';
+
+import { createColumnHelper } from '@tanstack/react-table';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { createSortableHeader, TableList, type Filter } from '~/components/Table';
+import type { Route } from "./+types/movimientos";
 
 export async function loader() {
   const [
@@ -72,7 +78,7 @@ const columns = [
   }),
   columnHelper.accessor("fecha", {
     header: createSortableHeader("Fecha"),
-    sortingFn: (rowA, rowB, _) => {
+    sortingFn: (rowA, rowB) => {
       const dateA = rowA.original.fecha.getTime();
       const dateB = rowB.original.fecha.getTime();
 
