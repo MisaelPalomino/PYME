@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.db.models import Q
 
 from .models import Usuario
 
@@ -12,18 +11,12 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        username_or_email = attrs['username']
-        password = attrs['password']
-
         try:
-            user = Usuario.objects.get(
-                Q(username=username_or_email) |
-                Q(email=username_or_email)
-            )
+            user = Usuario.objects.get(username=attrs['username'])
         except Usuario.DoesNotExist:
             raise serializers.ValidationError("Credenciales inválidas.")
 
-        if not user.check_password(password):
+        if not user.check_password(attrs['password']):
             raise serializers.ValidationError("Credenciales inválidas.")
 
         if not user.activo:
@@ -70,9 +63,8 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password2')
         password = validated_data.pop('password')
-
         user = Usuario(**validated_data)
-        user.set_password(password)
+        user.password = password
         user.save()
         return user
 

@@ -1,13 +1,8 @@
-import { type RouteConfig, index, route } from "@react-router/dev/routes"
+import { type RouteConfig, route, layout } from "@react-router/dev/routes"
+import * as navigation from "./lib/navigation";
 
 export default [
-  index("routes/login.tsx"),  // ← Login es la página principal
-  route("registro", "routes/registro.tsx"),
-  route("dashboard", "routes/home.tsx"),
-  route("productos", "routes/productos.tsx"),
-  route("categorias", "routes/categorias.tsx"),
-  route("proveedores", "routes/proveedores.tsx"),
-  route("movimientos", "routes/movimientos.tsx"),
-  route("inventario", "routes/inventario.tsx"),
-  route("predicciones", "routes/predicciones.tsx"),
-] satisfies RouteConfig
+  layout("layouts/auth-layout.tsx", [route(navigation.login.url, navigation.login.path)]),
+
+  layout("layouts/app-layout.tsx", navigation.pages.map(x => route(x.url, x.path)))
+] satisfies RouteConfig;

@@ -1,86 +1,55 @@
-import { createContext, useState, useContext, useEffect } from 'react';
-import api from '~/api/api';
+import { createContext, useState, useContext } from 'react';
+import type { ReactNode } from 'react';
+import * as api from "~/api/login";
 
-interface User {
-  id: number;
-  nombre: string;
-  email: string;
-  rol: string;
-}
+const STORAGE_KEY = "session";
 
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+type AuthContextType = {
+  session: api.LoginResponse | null;
+  login: (session: api.LoginResponse) => void;
   logout: () => void;
   isAuthenticated: boolean;
-}
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: any) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+const isBrowser = typeof window !== 'undefined';
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        try {
-          const response = await api.get('/auth/me/');
-          setUser(response.data);
-        } catch (error) {
-          console.error('Error al cargar usuario:', error);
-          localStorage.removeItem('access_token');
-        }
-      }
-      setLoading(false);
-    };
-    loadUser();
-  }, []);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<api.LoginResponse | null>(null); // ← Siempre null al inicio
 
-  const login = async (email: string, password: string): Promise<User> => {
-    console.log('🔐 Intentando login...');
-    setLoading(true);
-    try {
-      const response = await api.post('/auth/login/', {
-        username: email,
-        password
-      });
-      
-      console.log('✅ Respuesta del backend:', response.data);
-      
-      const { access, usuario } = response.data;
-      localStorage.setItem('access_token', access);
-      setUser(usuario);
-      setLoading(false);
-      return usuario;
-      }catch (error: any) {
-        console.log(error.response?.data.non_field_errors);
-        throw error;
-      }
+  const login = (newSession: api.LoginResponse) => {
+    setSession(newSession);
+    if (isBrowser) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        access: newSession.access,
+        refresh: newSession.refresh,
+        usuario: newSession.usuario
+      }));
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem('access_token');
-    setUser(null);
+    setSession(null);
+    if (isBrowser) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
   };
 
   const value = {
-    user,
-    loading,
+    session,
     login,
     logout,
-    isAuthenticated: !!user,
+    isAuthenticated: !!session,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth debe usarse dentro de AuthProvider');
   }
   return context;
-};
+}

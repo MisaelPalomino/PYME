@@ -12,3 +12,9 @@ export function to_money(value: number): string {
     minimumFractionDigits: 0,
   }).format(value);
 }
+
+export function formatApiError(error: Record<string, string[]>) {
+  return Object.entries(error)
+    .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
+    .join("\n");
+}

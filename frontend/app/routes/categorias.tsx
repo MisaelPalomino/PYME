@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
-import { categoriasAPI } from '~/api/api';
+import { getCategorias, createCategoria, updateCategoria, deleteCategoria } from "~/api/categoria";
 import type { Categoria } from '~/api/types';
 import { Button } from '~/components/ui/button';
 import { useAuth } from '~/context/AuthContext';
@@ -14,9 +14,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
 import { CategoriaSchema } from '~/lib/schemas/categoria.schema';
+import { toast } from 'sonner';
 
 export async function loader() {
-  const response = await categoriasAPI.getAll();
+  const response = await getCategorias();
   return {
     categorias: response.data
   };
@@ -41,7 +42,7 @@ const filters: Filter[] = [
 export default function Categorias({ loaderData }: Route.ComponentProps) {
   const { user } = useAuth();
   const fetcher = useFetcher();
-  
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ nombre: '', descripcion: '' });
@@ -83,9 +84,13 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
 
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && (fetcher.data as any).success) {
-      setIsDialogOpen(false);
-      resetForm();
+    if (fetcher.state !== "idle" || !fetcher.data) return;
+    setIsDialogOpen(false);
+    resetForm();
+    console.warn(fetcher.data);
+
+    if (fetcher.data.success) {
+      toast.success("¡Se guardó la categoría correctamente!");
     }
   }, [fetcher.state, fetcher.data]);
 
@@ -110,12 +115,6 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
       {generalError && (
         <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
           {generalError}
-        </div>
-      )}
-
-      {!isAdmin && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
-          <strong>Modo lectura:</strong> Solo puedes ver las categorías. Los cambios solo están disponibles para el administrador.
         </div>
       )}
 
@@ -221,8 +220,12 @@ export async function action({ request }: ActionFunctionArgs) {
       return { error: "ID de categoría inválido" };
     }
     try {
-      await categoriasAPI.delete(id);
-      return { success: true };
+      const result = await deleteCategoria(id);
+      if (result.ok) {
+        return { success: true };
+      } else {
+        return { error: result.error || "Error al eliminar la categoría" };
+      }
     } catch (error) {
       console.error(error);
       return { error: "Error al eliminar la categoría" };
@@ -231,7 +234,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Validamos con el esquema de Zod
   const result = CategoriaSchema.safeParse(submission);
-  
+
   if (!result.success) {
     return { errors: result.error.flatten().fieldErrors };
   }
@@ -239,9 +242,15 @@ export async function action({ request }: ActionFunctionArgs) {
   const editId = submission.editId ? Number(submission.editId) : null;
   try {
     if (editId) {
-      await categoriasAPI.update(editId, result.data);
+      const response = await updateCategoria(editId, result.data);
+      if (!response.ok) {
+        return { error: response.error || "Error al actualizar" };
+      }
     } else {
-      await categoriasAPI.create(result.data);
+      const response = await createCategoria(result.data);
+      if (!response.ok) {
+        return { error: response.error || "Error al crear" };
+      }
     }
     return { success: true };
   } catch (error) {

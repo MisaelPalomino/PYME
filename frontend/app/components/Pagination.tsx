@@ -4,7 +4,7 @@ import { Button } from '~/components/ui/button';
 
 function Pagination<T>({ table }: {readonly table: Table<T>}) {
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t">
+    <div className="flex items-center justify-between px-4 py-3 border-b border-t">
       <div className="text-sm text-muted-foreground">
         Página {table.getState().pagination.pageIndex + 1} de{" "}
         {table.getPageCount()}

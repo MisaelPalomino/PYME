@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { History } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -9,20 +9,21 @@ import { createColumnHelper } from '@tanstack/react-table';
 import type { Producto } from '~/api/types';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/inventario";
-import { productosAPI, categoriasAPI, movimientosAPI } from "~/api/api";
+import { productosAPI, categoriasAPI, movimientosAPI, inventarioAPI } from "~/api/api";
+import { toast } from 'sonner';
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const defaultTipo = url.searchParams.get("tipo");
 
+  // Optimizador de Rendimiento: Solo se cargan productos y categorías inicialmente.
+  // El historial de movimientos se descarga bajo demanda (Lazy Loading) por producto.
   const [
     { data: backendProductos },
-    { data: categorias },
-    { data: movimientos }
+    { data: categorias }
   ] = await Promise.all([
     productosAPI.getAll(),
-    categoriasAPI.getAll(),
-    movimientosAPI.getAll()
+    categoriasAPI.getAll()
   ]);
 
   const filters: Filter[] = [
@@ -66,11 +67,19 @@ export async function loader({ request }: Route.LoaderArgs) {
     };
   });
 
+  const totals = {
+    total: productos.length,
+    critical: productos.filter(p => p.estado === 'critical').length,
+    warning: productos.filter(p => p.estado === 'warning').length,
+    normal: productos.filter(p => p.estado === 'normal').length,
+  };
+
+
   return {
     productos,
     categorias,
-    movimientos,
     filters,
+    totals,
   };
 }
 
@@ -78,6 +87,8 @@ const columnHelper = createColumnHelper<Producto & { estado: "normal" | "warning
 
 export default function Inventory({ loaderData }: Route.ComponentProps) {
   const [historyProductId, setHistoryProductId] = useState<number | null>(null);
+  const [productHistory, setProductHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const totals = {
     total: loaderData.productos.length,
@@ -87,8 +98,21 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
   };
 
   const historyProduct = loaderData.productos.find(p => p.id_producto === historyProductId);
-  const productHistory = loaderData.movimientos.filter(m => m.id_producto === historyProductId);
 
+  // Carga asíncrona optimizada del historial de movimientos por producto
+  const handleVerHistorial = async (id: number) => {
+    setHistoryProductId(id);
+    setProductHistory([]);
+    setLoadingHistory(true);
+    try {
+      const { data } = await movimientosAPI.getHistorialPorProducto(id);
+      setProductHistory(data);
+    } catch (error) {
+      toast.error("Error al cargar el historial del producto");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const columns = [
     columnHelper.accessor("nombre", {
@@ -169,7 +193,7 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
         return (
           <div className="flex justify-center">
             <button
-              onClick={() => setHistoryProductId(info.row.original.id_producto)}
+              onClick={() => handleVerHistorial(info.row.original.id_producto)}
               className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground flex"
               title="Ver historial"
             >
@@ -180,6 +204,26 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
       }
     })
   ];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const result = await inventarioAPI.getHistory(historyProductId!);
+      
+      // setProductHistory(result.data);
+      setLoadingHistory(false);
+      // setOpenHisotry(true);
+    }
+    
+    if (historyProductId !== null) {
+      fetchData();
+    }
+  }, [historyProductId]);
+
+  function handleHistoryClose() {
+    setLoadingHistory(true);
+    setHistoryProductId(null);
+    // setOpenHistory(false);
+  }
 
   return (
     <div className="space-y-6">
@@ -193,10 +237,10 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Productos', value: totals.total, color: 'text-foreground' },
-          { label: 'Stock Crítico', value: totals.critical, color: 'text-destructive' },
-          { label: 'Stock Bajo', value: totals.warning, color: 'text-yellow-600' },
-          { label: 'Stock Normal', value: totals.normal, color: 'text-green-600' },
+          { label: 'Total Productos', value: loaderData.totals.total, color: 'text-foreground' },
+          { label: 'Stock Crítico', value: loaderData.totals.critical, color: 'text-destructive' },
+          { label: 'Stock Bajo', value: loaderData.totals.warning, color: 'text-yellow-600' },
+          { label: 'Stock Normal', value: loaderData.totals.normal, color: 'text-green-600' },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="pt-5 pb-4">
@@ -212,12 +256,14 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
 
       {/* History dialog */}
       <Dialog open={!!historyProductId} onOpenChange={(open) => { if (!open) setHistoryProductId(null); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg bg-background text-foreground border border-border">
           <DialogHeader>
             <DialogTitle>Historial de Movimientos — {historyProduct?.nombre}</DialogTitle>
           </DialogHeader>
           <div className="max-h-80 overflow-y-auto">
-            {productHistory.length === 0 ? (
+            {loadingHistory ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Cargando movimientos...</p>
+            ) : productHistory.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">Sin movimientos registrados</p>
             ) : (
               <table className="w-full text-xs">
@@ -231,17 +277,17 @@ export default function Inventory({ loaderData }: Route.ComponentProps) {
                 </thead>
                 <tbody>
                   {productHistory.map(m => (
-                    <tr key={m.id} className="border-b border-border/50">
+                    <tr className="border-b border-border/50">
                       <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">
                         {format(m.fecha, 'dd/MM/yy HH:mm', { locale: es })}
                       </td>
                       <td className="py-2 pr-3 text-center">
-                        <Badge variant={m.tipo_movimiento === 'Entrada' ? 'outline' : 'secondary'} className="text-xs">
+                        <Badge variant={m.tipo_movimiento === "entrada" ? 'outline' : 'secondary'} className="text-xs">
                           {m.tipo_movimiento}
                         </Badge>
                       </td>
-                      <td className={`py-2 pr-3 text-center font-medium ${m.tipo_movimiento === 'Entrada' ? 'text-green-600' : 'text-red-600'}`}>
-                        {m.tipo_movimiento === 'Entrada' ? '+' : '-'}{m.cantidad}
+                      <td className={`py-2 pr-3 text-center font-medium ${m.tipo_movimiento === 'entrada' ? 'text-green-600' : 'text-red-600'}`}>
+                        {m.tipo_movimiento === 'entrada' ? '+' : '-'}{m.cantidad}
                       </td>
                       <td className="py-2 text-muted-foreground">{m.observaciones}</td>
                     </tr>

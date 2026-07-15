@@ -3,6 +3,7 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 
 from .models import Categoria, Producto, Proveedor
+from django.db.models import Case, When, Value, CharField, F
 
 
 class CategoriaService:
@@ -38,12 +39,32 @@ class CategoriaService:
 class ProductoService:
     @staticmethod
     def listar():
-        return Producto.objects.select_related("id_categoria", "id_proveedor_principal")
+        return (
+            Producto.objects
+            .select_related("id_categoria", "id_proveedor_principal")
+            .annotate(
+                estado=Case(
+                    When(stock_actual__lt=F("stock_minimo"), then=Value("Crítico")),
+                    When(stock_actual=F("stock_minimo"), then=Value("Mínimo")),
+                    default=Value("Normal"),
+                    output_field=CharField(),
+                )
+            )
+        )
 
     @staticmethod
     def obtener(id_producto):
         return get_object_or_404(
-            Producto.objects.select_related("id_categoria", "id_proveedor_principal"),
+            Producto.objects
+            .select_related("id_categoria", "id_proveedor_principal")
+            .annotate(
+                estado=Case(
+                    When(stock_actual__lt=F("stock_minimo"), then=Value("Crítico")),
+                    When(stock_actual=F("stock_minimo"), then=Value("Mínimo")),
+                    default=Value("Normal"),
+                    output_field=CharField(),
+                )
+            ),
             pk=id_producto,
         )
 

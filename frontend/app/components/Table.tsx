@@ -25,6 +25,7 @@ export type TableProps<T extends RowData> = {
   data: T[],
   columns: ColumnDef<T, any>[],
   filters: Filter[],
+  defaultSort?: SortingState,
 };
 
 function FilterInput(props: {
@@ -101,12 +102,12 @@ export function createSortableHeader<TData, TValue>(name: string) {
   };
 }
 
-export function TableWireframe<T extends RowData>({ data, columns, filters, children }: TableProps<T> & { children?: (table: Table<T>) => React.ReactNode }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+export function TableWireframe<T extends RowData>({ data, columns, defaultSort, filters, children }: TableProps<T> & { children?: (table: Table<T>) => React.ReactNode }) {
+  const [sorting, setSorting] = useState<SortingState>(defaultSort ?? []);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     filters
       .filter(f => f.defaultValue)
-      .map(f => ({id: f.columnName, value: f.defaultValue}))
+      .map(f => ({ id: f.columnName, value: f.defaultValue }))
   );
   const table = useReactTable({
     data,
@@ -138,9 +139,9 @@ export function TableWireframe<T extends RowData>({ data, columns, filters, chil
               {filters.map(f => {
                 switch (f.type) {
                   case "input":
-                    return <FilterInput placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} />
+                    return <FilterInput key={f.columnName} placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} />
                   case "combobox":
-                    return <FilterCombobox placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} items={f.items} />
+                    return <FilterCombobox key={f.columnName} placeholder={f.placeholder} name={f.columnName} defaultValue={f.defaultValue} setChangeValue={setChangeValue} items={f.items} />
                 }
               })}
             </div>
@@ -148,17 +149,17 @@ export function TableWireframe<T extends RowData>({ data, columns, filters, chil
         </Card>
       }
 
+      <Pagination table={table} />
+
       { /* Table */}
       {children?.(table)}
-
-      <Pagination table={table} />
     </>
   )
 }
 
-export function TableList<T extends RowData>({ data, columns, filters }: TableProps<T>) {
+export function TableList<T extends RowData>({ data, columns, defaultSort, filters }: TableProps<T>) {
   return (
-    <TableWireframe columns={columns} data={data} filters={filters}>
+    <TableWireframe columns={columns} data={data} filters={filters} defaultSort={defaultSort}>
       {
         (table) => (
           <Card className="p-0">
@@ -217,9 +218,9 @@ export function TableList<T extends RowData>({ data, columns, filters }: TablePr
   )
 }
 
-export function TableCard<T extends RowData>({ data, columns, filters, children }: TableProps<T> & { children: (item: T) => React.ReactNode }) {
+export function TableCard<T extends RowData>({ data, columns, filters, defaultSort, children }: TableProps<T> & { children: (item: T) => React.ReactNode }) {
   return (
-    <TableWireframe columns={columns} data={data} filters={filters}>
+    <TableWireframe columns={columns} data={data} filters={filters} defaultSort={defaultSort}>
       {
         (table) => (
           <>
@@ -229,7 +230,7 @@ export function TableCard<T extends RowData>({ data, columns, filters, children 
               </div>
             }
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {table.getRowModel().rows.map(row => children(row.original))}
             </div>
           </>

@@ -3,7 +3,7 @@ import {
   ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
 import { NavLink } from 'react-router';
-import { navigation } from '~/lib/navigation';
+import * as navigation from '~/lib/navigation';
 
 type SidebarProps = {
   collapsed: boolean,
@@ -51,7 +51,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
         <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
           <ul className="space-y-1 px-2">
             {
-              navigation.map(({ url, icon: Icon, label }) => (
+              navigation.pages.map(({ url, icon: Icon, label }) => (
                 <li key={url}>
                   <NavLink
                     to={url}

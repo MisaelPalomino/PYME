@@ -1,47 +1,29 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '~/context/AuthContext';
-import { useNavigate } from 'react-router';
 import { Button } from '~/components/ui/button';
+import { toast } from 'sonner';
+import * as api from "~/api/login";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { CircleX } from 'lucide-react';
+import { useAuth } from '~/context/AuthContext';
+import { useNavigate } from 'react-router'; 
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login, user } = useAuth();
-  const navigate = useNavigate();
+  const { register, handleSubmit, formState: { errors } } = useForm<api.LoginRequest>({
+    resolver: zodResolver(api.LoginRequestSchema),
+  });
+  const { login } = useAuth();
+  const navigate = useNavigate(); 
 
-  // Si ya está autenticado, ir al dashboard
-  useEffect(() => {
-    if (user) {
+  async function onSubmit(data: api.LoginRequest) {
+    const result = await api.login(data);
+    if (result.ok) {
+      console.log('✅ Login exitoso, datos:', result.data);
+      login(result.data);  // Esto guarda en localStorage
       navigate('/dashboard');
+    } else {
+      toast.error(result.error);
     }
-  }, [user, navigate]);
-
-const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    console.log("Entró al submit");
-    console.log(email, password);
-
-    setLoading(true);
-    setError("");
-
-    try {
-        console.log("Antes del login");
-
-        const result = await login(email, password);
-
-        console.log("Después del login");
-        console.log(result);
-
-    } catch (err) {
-        console.error(err);
-        setError("Credenciales incorrectas");
-    } finally {
-        setLoading(false);
-    }
-};
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -54,25 +36,22 @@ const handleSubmit = async (e: React.FormEvent) => {
           <p className="text-sm text-gray-500 mt-1">Inicia sesión para continuar</p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm mb-4">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
+        <form method="post" onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Correo Electrónico
+              Nombre de usuario
             </label>
             <input
-              type="email"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@email.com"
-              required
+              {...register("username")}
+              placeholder="jdoe"
             />
+            {errors.username && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                <CircleX className="h-3 w-3 shrink-0" />
+                <span>{errors.username.message}</span>
+              </p>
+            )}
           </div>
 
           <div className="mb-4">
@@ -80,36 +59,33 @@ const handleSubmit = async (e: React.FormEvent) => {
               Contraseña
             </label>
             <input
-              type="password"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="admin123"
-              required
+              {...register("password")}
+              placeholder="pass1234"
             />
+            {errors.password && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                <CircleX className="h-3 w-3 shrink-0" />
+                <span>{errors.password.message}</span>
+              </p>
+            )}
           </div>
 
           <Button
             type="submit"
             className="w-full"
-            disabled={loading}
           >
-            {loading ? 'Cargando...' : 'Iniciar Sesión'}
+            Iniciar Sesión
           </Button>
         </form>
 
-         <Button
-            type="button"
-            variant="outline"
-            className="w-full mt-3"
-            onClick={() => navigate("/registro")}
-          >
-            Crear cuenta
-          </Button>
-
-        <div className="mt-4 text-center text-sm text-gray-500">
-          <p>Demo: admin@email.com / admin123</p>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full mt-3"
+        >
+          Crear cuenta
+        </Button>
       </div>
     </div>
   );

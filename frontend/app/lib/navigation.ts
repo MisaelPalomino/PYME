@@ -1,27 +1,91 @@
 import {
+    ArrowLeftRight,
   LayoutDashboard,
   Package,
   Tag,
-  ArrowLeftRight,
+  Truck,
   Warehouse,
   Brain,
-  Truck,
-  type LucideIcon,
+  ShoppingCart,
+  BarChart3,
+  Users,
+  type LucideIcon
 } from "lucide-react";
 
-export interface NavItem {
-  url: string;
-  icon: LucideIcon;
-  label: string;
-  end?: boolean;
-}
+type NavigationItem = {
+  url: string
+  path: string,
+  label: string,
+  icon: LucideIcon
+};
 
-export const navigation: NavItem[] = [
-  { url: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { url: "/productos", icon: Package, label: "Productos" },
-  { url: "/categorias", icon: Tag, label: "Categorías" },
-  { url: "/proveedores", icon: Truck, label: "Proveedores" },
-  { url: "/movimientos", icon: ArrowLeftRight, label: "Movimientos" },
-  { url: "/inventario", icon: Warehouse, label: "Inventario" },
-  { url: "/predicciones", icon: Brain, label: "Predicciones" },
+// Sirve para mostrar (o no) secciones del sistema.
+// @see frontend/app/components/Sidebar 
+export const pages: NavigationItem[] = [
+  {
+    url: "dashboard",
+    path: "routes/home.tsx",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    url: "productos",
+    path: "routes/productos.tsx",
+    label: "Productos",
+    icon: Package,
+  },
+  {
+    url: "categorias",
+    path: "routes/categorias.tsx",
+    label: "Categorías",
+    icon: Tag,
+  },
+  {
+    url: "proveedores",
+    path: "routes/proveedores.tsx",
+    label: "Proveedores",
+    icon: Truck,
+  },
+  {
+    url: "pedidos",
+    path: "routes/pedidos.tsx",
+    label: "Pedidos",
+    icon: ShoppingCart,
+  },
+  {
+    url: "informes",
+    path: "routes/informes.tsx",
+    label: "Informes",
+    icon: BarChart3,
+  },
+  {
+    url: "usuarios",
+    path: "routes/usuarios.tsx",
+    label: "Usuarios",
+    icon: Users,
+  },
+  {
+    url: "movimientos",
+    path: "routes/movimientos.tsx",
+    label: "Movimientos",
+    icon: ArrowLeftRight,
+  },
+  {
+    url: "inventario",
+    path: "routes/inventario.tsx",
+    label: "Inventario",
+    icon: Warehouse,
+  },
+  {
+    url: "predicciones",
+    path: "routes/predicciones.tsx",
+    label: "Predicciones",
+    icon: Brain,
+  }
 ];
+
+export const dashboard_url = pages[0].url;
+export const login = {
+  url: "/",
+  path: "routes/login.tsx"
+};

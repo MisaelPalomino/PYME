@@ -9,29 +9,34 @@ import { es } from 'date-fns/locale';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/movimientos";
 import { useFetcher } from "react-router";
-import { movimientosAPI, productosAPI } from '~/api/api';
+import { movimientosAPI, productosAPI } from '~/api/movimiento';
 import { MovimientoSchema } from '~/lib/schemas/movimiento.schema';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
 import type { ActionFunctionArgs } from "react-router";
 import { useAuth } from '~/context/AuthContext';
+import { toast } from 'sonner';
 
 export async function loader() {
-  const [
-    { data: movimientos },
-    { data: productos }
-  ] = await Promise.all([
-    movimientosAPI.getAll(),
-    productosAPI.getAll()
-  ]);
+  try {
+    const [movimientosRes, productosRes] = await Promise.all([
+      movimientosAPI.getAll().catch(() => ({ data: [] })),
+      productosAPI.getAll().catch(() => ({ data: [] }))
+    ]);
 
-  return {
-    movimientos,
-    productos
-  };
+    return {
+      movimientos: movimientosRes.data || [],
+      productos: productosRes.data || []
+    };
+  } catch (error) {
+    console.error('Error en loader de movimientos:', error);
+    return {
+      movimientos: [],
+      productos: []
+    };
+  }
 }
-
 const columnHelper = createColumnHelper<Movimiento>();
 
 const columns = [
@@ -73,6 +78,12 @@ const columns = [
   }),
   columnHelper.accessor("fecha", {
     header: createSortableHeader("Fecha"),
+    sortingFn: (rowA, rowB, _) => {
+      const dateA = rowA.original.fecha.getTime();
+      const dateB = rowB.original.fecha.getTime();
+
+      return dateA - dateB;
+    },
     cell: (info) => (
       <div className="px-4 py-3 text-muted-foreground whitespace-nowrap">
         {format(info.getValue(), 'dd/MM/yyyy HH:mm', { locale: es })}
@@ -82,7 +93,7 @@ const columns = [
   columnHelper.display({
     id: "observaciones",
     header: "Observaciones",
-    size: NaN,
+    size: 400,
     cell: (info) => (
       <div className="px-4 py-3 text-muted-foreground">{info.row.original.observaciones}</div>
     )
@@ -125,10 +136,18 @@ export default function Movements({ loaderData }: Route.ComponentProps) {
 
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && (fetcher.data as any).success) {
-      setDialogOpen(false);
-      resetForm();
+    if (fetcher.state !== "idle" || !fetcher.data) return;
+    setDialogOpen(false);
+    resetForm();
+    // console.warn(fetcher.data);
+
+    if (fetcher.data.success) {
+      toast.success("¡Se guardó el proveedor correctamente!");
     }
+    /* TODO: Parece que alguien hizo que se muestre directamente
+    else {
+      toast.error(fetcher.data.error);
+    }*/
   }, [fetcher.state, fetcher.data]);
 
   const errors = fetcher.data && (fetcher.data as any).errors;
@@ -261,13 +280,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
   try {
     const userId = submission.id_usuario ? Number(submission.id_usuario) : 1;
+    // console.warn(result.data);
     await movimientosAPI.create({
       ...result.data,
       id_usuario: userId
     });
     return { success: true };
   } catch (error: any) {
-    console.error(error);
     const message = error.response?.data?.error || "Error al comunicarse con el servidor";
     return { error: message };
   }
