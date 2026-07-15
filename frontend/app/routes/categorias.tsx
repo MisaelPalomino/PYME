@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
-import { categoriasAPI } from '~/api/api';
+import { getCategorias, createCategoria, updateCategoria, deleteCategoria } from "~/api/categoria";
 import type { Categoria } from '~/api/types';
 import { Button } from '~/components/ui/button';
 import { useAuth } from '~/context/AuthContext';
@@ -17,7 +17,7 @@ import { CategoriaSchema } from '~/lib/schemas/categoria.schema';
 import { toast } from 'sonner';
 
 export async function loader() {
-  const response = await categoriasAPI.getAll();
+  const response = await getCategorias();
   return {
     categorias: response.data
   };
@@ -92,10 +92,6 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
     if (fetcher.data.success) {
       toast.success("¡Se guardó la categoría correctamente!");
     }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
-      toast.error(fetcher.data.error);
-    }*/
   }, [fetcher.state, fetcher.data]);
 
   const errors = fetcher.data && (fetcher.data as any).errors;
@@ -121,14 +117,6 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
           {generalError}
         </div>
       )}
-
-      {/* TODO:
-        !isAdmin && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg text-sm">
-          <strong>Modo lectura:</strong> Solo puedes ver las categorías. Los cambios solo están disponibles para el administrador.
-        </div>
-      )
-      */}
 
       <TableCard columns={columns} data={loaderData.categorias} filters={filters}>
         {(item) => (
@@ -232,8 +220,12 @@ export async function action({ request }: ActionFunctionArgs) {
       return { error: "ID de categoría inválido" };
     }
     try {
-      await categoriasAPI.delete(id);
-      return { success: true };
+      const result = await deleteCategoria(id);
+      if (result.ok) {
+        return { success: true };
+      } else {
+        return { error: result.error || "Error al eliminar la categoría" };
+      }
     } catch (error) {
       console.error(error);
       return { error: "Error al eliminar la categoría" };
@@ -250,9 +242,15 @@ export async function action({ request }: ActionFunctionArgs) {
   const editId = submission.editId ? Number(submission.editId) : null;
   try {
     if (editId) {
-      await categoriasAPI.update(editId, result.data);
+      const response = await updateCategoria(editId, result.data);
+      if (!response.ok) {
+        return { error: response.error || "Error al actualizar" };
+      }
     } else {
-      await categoriasAPI.create(result.data);
+      const response = await createCategoria(result.data);
+      if (!response.ok) {
+        return { error: response.error || "Error al crear" };
+      }
     }
     return { success: true };
   } catch (error) {

@@ -16,7 +16,7 @@ class LoginSerializer(serializers.Serializer):
         except Usuario.DoesNotExist:
             raise serializers.ValidationError("Credenciales inválidas.")
 
-        if user.password != attrs['password']:
+        if not user.check_password(attrs['password']):
             raise serializers.ValidationError("Credenciales inválidas.")
 
         if not user.activo:

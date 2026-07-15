@@ -9,7 +9,7 @@ import { es } from 'date-fns/locale';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/movimientos";
 import { useFetcher } from "react-router";
-import { movimientosAPI, productosAPI } from '~/api/api';
+import { movimientosAPI, productosAPI } from '~/api/movimiento';
 import { MovimientoSchema } from '~/lib/schemas/movimiento.schema';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
@@ -19,20 +19,24 @@ import { useAuth } from '~/context/AuthContext';
 import { toast } from 'sonner';
 
 export async function loader() {
-  const [
-    { data: movimientos },
-    { data: productos }
-  ] = await Promise.all([
-    movimientosAPI.getAll(),
-    productosAPI.getAll()
-  ]);
+  try {
+    const [movimientosRes, productosRes] = await Promise.all([
+      movimientosAPI.getAll().catch(() => ({ data: [] })),
+      productosAPI.getAll().catch(() => ({ data: [] }))
+    ]);
 
-  return {
-    movimientos,
-    productos
-  };
+    return {
+      movimientos: movimientosRes.data || [],
+      productos: productosRes.data || []
+    };
+  } catch (error) {
+    console.error('Error en loader de movimientos:', error);
+    return {
+      movimientos: [],
+      productos: []
+    };
+  }
 }
-
 const columnHelper = createColumnHelper<Movimiento>();
 
 const columns = [

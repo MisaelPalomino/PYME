@@ -5,17 +5,21 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CircleX } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
+import { useNavigate } from 'react-router'; 
 
 export default function Login() {
   const { register, handleSubmit, formState: { errors } } = useForm<api.LoginRequest>({
     resolver: zodResolver(api.LoginRequestSchema),
   });
   const { login } = useAuth();
+  const navigate = useNavigate(); 
 
   async function onSubmit(data: api.LoginRequest) {
     const result = await api.login(data);
     if (result.ok) {
-      login(result.data); 
+      console.log('✅ Login exitoso, datos:', result.data);
+      login(result.data);  // Esto guarda en localStorage
+      navigate('/dashboard');
     } else {
       toast.error(result.error);
     }

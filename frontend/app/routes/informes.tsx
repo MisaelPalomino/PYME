@@ -12,7 +12,8 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useSearchParams } from 'react-router';
 import type { Route } from './+types/informes';
-import { categoriasAPI, informesAPI } from '~/api/api';
+import { getCategorias } from '~/api/categoria';
+import { getBajoStock, getRotacion, getConsolidado, getGraficosComprasVentas } from '~/api/informe';
 import { toast } from 'sonner';
 
 type BajoStockItem = {
@@ -82,11 +83,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     { data: consolidado },
     { data: graficosCV }
   ] = await Promise.all([
-    categoriasAPI.getAll(),
-    informesAPI.getBajoStock(apiParams),
-    informesAPI.getRotacion(apiParams),
-    informesAPI.getConsolidado(),
-    informesAPI.getGraficosComprasVentas(apiParams)
+    getCategorias(),
+    getBajoStock(apiParams),
+    getRotacion(apiParams),
+    getConsolidado(),
+    getGraficosComprasVentas(apiParams)
   ]);
 
   return {

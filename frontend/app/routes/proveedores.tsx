@@ -1,59 +1,45 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
-import { Plus, Edit2, Trash2, Mail, Phone, Clock, FileText } from 'lucide-react';
-import type { Route } from "./+types/proveedores";
 import { Button } from '~/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import type { Route } from "./+types/proveedores";
+import { Edit2, Plus, Trash2, Truck } from 'lucide-react';
+import { createColumnHelper } from "@tanstack/react-table";
+import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
-import { proveedoresAPI } from '~/api/api';
-import type { Proveedor } from '~/api/types';
-import { ProveedorSchema } from '~/lib/schemas/proveedor.schema';
-import { createColumnHelper } from '@tanstack/react-table';
-import { TableCard, type Filter } from '~/components/Table';
-import { Badge } from '~/components/ui/badge';
 import { toast } from 'sonner';
+import { getProveedores, createProveedor, updateProveedor, deleteProveedor, type Proveedor } from '~/api/proveedor';
+import { ProveedorRequestSchema } from '~/api/proveedor';
 
-export async function loader({ }: Route.LoaderArgs) {
-  const response = await proveedoresAPI.getAll();
-  return {
-    proveedores: response.data
-  };
+type ProveedorFormData = {
+  nombre: string;
+  contacto: string;
+  correo: string;
+  telefono: string;
+  lead_time_dias: string;
 }
 
 const columnHelper = createColumnHelper<Proveedor>();
 
-const columns = [
-  columnHelper.accessor("nombre", {
-    enableColumnFilter: true
-  })
-];
+export async function loader() {
+  const { data: proveedores } = await getProveedores();
+  return { proveedores };
+}
 
-const filters: Filter[] = [
-  {
-    type: "input",
-    columnName: "nombre",
-    placeholder: "Buscar por nombre..."
-  }
-];
-
-export default function Suppliers({ loaderData }: Route.ComponentProps) {
+export default function Proveedores({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProveedorFormData>({
     nombre: '',
     contacto: '',
     correo: '',
     telefono: '',
     lead_time_dias: '',
   });
-
-  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-  const [emailSupplier, setEmailSupplier] = useState<Proveedor | null>(null);
 
   const resetForm = () => {
     setFormData({
@@ -66,67 +52,111 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
     setEditId(null);
   };
 
-  function openCreate() {
+  const openCreate = () => {
     resetForm();
-    setDialogOpen(true);
-  }
+    setIsDialogOpen(true);
+  };
 
-  function openEdit(s: Proveedor) {
+  const openEdit = (proveedor: Proveedor) => {
     setFormData({
-      nombre: s.nombre,
-      contacto: s.contacto,
-      correo: s.correo,
-      telefono: s.telefono,
-      lead_time_dias: s.lead_time_dias.toString(),
+      nombre: proveedor.nombre,
+      contacto: proveedor.contacto || '',
+      correo: proveedor.correo || '',
+      telefono: proveedor.telefono || '',
+      lead_time_dias: proveedor.lead_time_dias.toString(),
     });
-    setEditId(s.id_proveedor);
-    setDialogOpen(true);
-  }
+    setEditId(proveedor.id_proveedor);
+    setIsDialogOpen(true);
+  };
 
-  function handleDelete(id: number) {
+  const handleDelete = (id: number) => {
     if (!confirm('¿Estás seguro de eliminar este proveedor?')) return;
     fetcher.submit(
       { intent: "delete", id_proveedor: id.toString() },
       { method: "post" }
     );
-  }
+  };
 
-  // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
-    setDialogOpen(false);
+    setIsDialogOpen(false);
     resetForm();
-    console.warn(fetcher.data);
 
     if (fetcher.data.success) {
       toast.success("¡Se guardó el proveedor correctamente!");
-    }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
+    } else if (fetcher.data.error) {
       toast.error(fetcher.data.error);
-    }*/
+    }
   }, [fetcher.state, fetcher.data]);
 
-  function openEmailTemplate(s: Proveedor) {
-    setEmailSupplier(s);
-    setEmailDialogOpen(true);
-  }
+  const columns = useMemo(() => [
+    columnHelper.accessor("nombre", {
+      header: createSortableHeader("Nombre"),
+      enableSorting: true,
+      cell: (info) => <div className="px-4 py-3 font-medium">{info.getValue()}</div>
+    }),
+    columnHelper.accessor("contacto", {
+      header: createSortableHeader("Contacto"),
+      cell: (info) => <div className="px-4 py-3 text-muted-foreground">{info.getValue()}</div>
+    }),
+    columnHelper.accessor("correo", {
+      header: createSortableHeader("Correo"),
+      cell: (info) => <div className="px-4 py-3 text-muted-foreground">{info.getValue()}</div>
+    }),
+    columnHelper.accessor("telefono", {
+      header: createSortableHeader("Teléfono"),
+      cell: (info) => <div className="px-4 py-3 text-muted-foreground">{info.getValue()}</div>
+    }),
+    columnHelper.accessor("lead_time_dias", {
+      header: createSortableHeader("Lead Time"),
+      cell: (info) => <div className="px-4 py-3 text-center">{info.getValue()} días</div>
+    }),
+    columnHelper.display({
+      id: "actions",
+      header: "Acciones",
+      cell: (info) => {
+        const proveedor = info.row.original;
+        return (
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => openEdit(proveedor)}
+                className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                title="Editar proveedor"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => handleDelete(proveedor.id_proveedor)}
+                className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
+                title="Eliminar proveedor"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        );
+      }
+    })
+  ], []);
+
+  const filters: Filter[] = [
+    {
+      type: "input",
+      columnName: "nombre",
+      placeholder: "Buscar por nombre..."
+    }
+  ];
 
   const errors = fetcher.data && (fetcher.data as any).errors;
   const generalError = fetcher.data && (fetcher.data as any).error;
-
-  function getComplianceColor(rate: number) {
-    if (rate >= 90) return 'text-green-600';
-    if (rate >= 80) return 'text-yellow-600';
-    return 'text-destructive';
-  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Proveedores</h1>
-          <p className="text-sm text-muted-foreground">{loaderData.proveedores.length} proveedores registrados</p>
+          <h1 className="text-2xl font-bold text-foreground">Gestión de Proveedores</h1>
+          <p className="text-sm text-muted-foreground">{loaderData?.proveedores?.length || 0} proveedores registrados</p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="w-4 h-4 mr-2" />
@@ -140,82 +170,10 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
         </div>
       )}
 
-      <TableCard columns={columns} data={loaderData.proveedores} filters={filters}>
-        {(item) => (
-          <Card key={item.id_proveedor} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-sm font-semibold">{item.nombre}</CardTitle>
-                  <p className="text-xs text-muted-foreground mt-0.5">{item.contacto}</p>
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => openEmailTemplate(item)}
-                    className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-                    title="Plantilla de correo"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => openEdit(item)}
-                    className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
-                    title="Editar proveedor"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id_proveedor)}
-                    className="p-1.5 rounded hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
-                    title="Eliminar proveedor"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="w-3 h-3" /> {item.correo}
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="w-3 h-3" /> {item.telefono}
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="w-3 h-3" /> Lead time: {item.lead_time_dias} días
-                </div>
+      <TableList data={loaderData?.proveedores || []} columns={columns} filters={filters} defaultSort={[{ id: "nombre", desc: false }]} />
 
-                <div className="pt-2 border-t border-border">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-muted-foreground">Cumplimiento</span>
-                    <span className={`text-xs ${getComplianceColor(item.porcentaje_cumplimiento)}`}>{item.porcentaje_cumplimiento}%</span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${item.porcentaje_cumplimiento >= 90 ? 'bg-green-500' : item.porcentaje_cumplimiento >= 80 ? 'bg-yellow-500' : 'bg-destructive'}`}
-                      style={{ width: `${item.porcentaje_cumplimiento}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1">
-                  {item.categorias.map(c => (
-                    <Badge key={c.id_categoria} variant="outline" className="text-xs">{c.nombre}</Badge>
-                  ))}
-                  {item.categorias.length > 3 && (
-                    <Badge variant="outline" className="text-xs">+{item.categorias.length - 3} más</Badge>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </TableCard>
-
-      {/* Dialogo Crear/Editar */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => {
-        setDialogOpen(open);
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open);
         if (!open) resetForm();
       }}>
         <DialogContent className="max-w-md">
@@ -234,6 +192,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
               <Input
                 id="nombre"
                 name="nombre"
+                type="text"
                 required
                 value={formData.nombre}
                 onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
@@ -242,11 +201,11 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="contacto">Nombre de Contacto *</Label>
+              <Label htmlFor="contacto">Contacto</Label>
               <Input
                 id="contacto"
                 name="contacto"
-                required
+                type="text"
                 value={formData.contacto}
                 onChange={(e) => setFormData({ ...formData, contacto: e.target.value })}
               />
@@ -254,7 +213,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="correo">Correo Electrónico *</Label>
+              <Label htmlFor="correo">Correo *</Label>
               <Input
                 id="correo"
                 name="correo"
@@ -267,11 +226,11 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="telefono">Teléfono *</Label>
+              <Label htmlFor="telefono">Teléfono</Label>
               <Input
                 id="telefono"
                 name="telefono"
-                required
+                type="text"
                 value={formData.telefono}
                 onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
               />
@@ -279,12 +238,12 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor="lead_time_dias">Tiempo de Entrega (días) *</Label>
+              <Label htmlFor="lead_time_dias">Lead Time (días) *</Label>
               <Input
                 id="lead_time_dias"
                 name="lead_time_dias"
                 type="number"
-                min="1"
+                min="0"
                 required
                 value={formData.lead_time_dias}
                 onChange={(e) => setFormData({ ...formData, lead_time_dias: e.target.value })}
@@ -293,7 +252,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => setDialogOpen(false)}>
+              <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={fetcher.state !== 'idle'}>
@@ -301,34 +260,6 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
               </Button>
             </DialogFooter>
           </fetcher.Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Email template dialog */}
-      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Plantilla de Correo — {emailSupplier?.correo}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="bg-muted/30 rounded-lg p-4 text-sm space-y-3 font-mono text-xs text-foreground">
-            <p><strong>Para:</strong> {emailSupplier?.correo}</p>
-            <p><strong>Asunto:</strong> Solicitud de reposición de stock</p>
-            <hr className="border-border" />
-            <p>Estimado/a {emailSupplier?.contacto || emailSupplier?.nombre},</p>
-            <p>Por medio del presente, nos dirigimos a usted para solicitar la reposición de stock para los productos que manejamos con su empresa.</p>
-            <p>Agradecemos su pronta atención y confirmación de disponibilidad.</p>
-            <p>Atentamente,<br />Equipo de Compras — StockMaster Pro</p>
-          </div>
-          <p className="text-xs text-muted-foreground">¡Copia este texto y envíalo!</p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cerrar</Button>
-            <Button onClick={() => { navigator.clipboard.writeText(`Estimado/a ${emailSupplier?.contacto || emailSupplier?.nombre},\n\nPor medio del presente, nos dirigimos a usted para solicitar la reposición de stock para los productos que manejamos con su empresa.\n\nAgradecemos su pronta atención y confirmación de disponibilidad.\n\nAtentamente,\nEquipo de Compras — StockMaster Pro`); setEmailDialogOpen(false); toast.success("¡Email copiado!") }}>
-              Copiar plantilla
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -346,16 +277,18 @@ export async function action({ request }: ActionFunctionArgs) {
       return { error: "ID de proveedor inválido" };
     }
     try {
-      await proveedoresAPI.delete(id);
-      return { success: true };
+      const result = await deleteProveedor(id);
+      if (result.ok) {
+        return { success: true };
+      } else {
+        return { error: result.error || "Error al eliminar el proveedor" };
+      }
     } catch (error) {
-      console.error(error);
       return { error: "Error al eliminar el proveedor" };
     }
   }
 
-  // Validamos con el esquema de Zod
-  const result = ProveedorSchema.safeParse(submission);
+  const result = ProveedorRequestSchema.safeParse(submission);
 
   if (!result.success) {
     return { errors: result.error.flatten().fieldErrors };
@@ -364,13 +297,18 @@ export async function action({ request }: ActionFunctionArgs) {
   const editId = submission.editId ? Number(submission.editId) : null;
   try {
     if (editId) {
-      await proveedoresAPI.update(editId, result.data);
+      const response = await updateProveedor(editId, result.data);
+      if (!response.ok) {
+        return { error: response.error || "Error al actualizar" };
+      }
     } else {
-      await proveedoresAPI.create(result.data);
+      const response = await createProveedor(result.data);
+      if (!response.ok) {
+        return { error: response.error || "Error al crear" };
+      }
     }
     return { success: true };
   } catch (error) {
-    console.error(error);
     return { error: "Error al comunicarse con el servidor" };
   }
 }

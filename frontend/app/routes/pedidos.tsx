@@ -12,7 +12,9 @@ import { es } from 'date-fns/locale';
 import { useFetcher } from 'react-router';
 import type { ActionFunctionArgs } from 'react-router';
 import type { Route } from './+types/pedidos';
-import { pedidosAPI, productosAPI, proveedoresAPI } from '~/api/api';
+import { getPedidos, createPedido, updatePedidoEstado, recibirPedido, deletePedido } from '~/api/pedido';
+import { getProductos } from '~/api/producto';
+import { getProveedores } from '~/api/proveedor';
 import { PedidoSchema } from '~/lib/schemas/pedido.schema';
 import { toast } from 'sonner';
 
@@ -47,9 +49,9 @@ export async function loader() {
     { data: productos },
     { data: proveedores }
   ] = await Promise.all([
-    pedidosAPI.getAll(),
-    productosAPI.getAll(),
-    proveedoresAPI.getAll()
+    getPedidos(),
+    getProductos(),
+    getProveedores()
   ]);
 
   return {
@@ -67,8 +69,12 @@ export async function action({ request }: ActionFunctionArgs) {
   if (intent === 'delete') {
     const id = Number(submission.id_pedido);
     try {
-      await pedidosAPI.delete(id);
-      return { success: true };
+      const result = await deletePedido(id);
+      if (result.ok) {
+        return { success: true };
+      } else {
+        return { error: result.error || 'Error al cancelar el pedido' };
+      }
     } catch (error: any) {
       console.error(error);
       return { error: error.response?.data?.error || 'Error al cancelar el pedido' };
@@ -78,8 +84,12 @@ export async function action({ request }: ActionFunctionArgs) {
   if (intent === 'send') {
     const id = Number(submission.id_pedido);
     try {
-      await pedidosAPI.updateEstado(id, 'enviado');
-      return { success: true };
+      const result = await updatePedidoEstado(id, 'enviado');
+      if (result.ok) {
+        return { success: true };
+      } else {
+        return { error: result.error || 'Error al enviar el pedido' };
+      }
     } catch (error: any) {
       console.error(error);
       return { error: error.response?.data?.error || 'Error al enviar el pedido' };
@@ -89,8 +99,12 @@ export async function action({ request }: ActionFunctionArgs) {
   if (intent === 'receive') {
     const id = Number(submission.id_pedido);
     try {
-      await pedidosAPI.recibir(id);
-      return { success: true };
+      const result = await recibirPedido(id);
+      if (result.ok) {
+        return { success: true };
+      } else {
+        return { error: result.error || 'Error al recibir el pedido' };
+      }
     } catch (error: any) {
       console.error(error);
       return { error: error.response?.data?.error || 'Error al recibir el pedido' };
@@ -104,13 +118,12 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const payload = {
-    id_proveedor: result.data.id_proveedor,
-    id_usuario: 1, // Usuario por defecto para el registro
+    id_proveedor: Number(result.data.id_proveedor),
     detalles: [
       {
-        id_producto: result.data.id_producto,
-        cantidad: result.data.cantidad,
-        precio_unitario: result.data.precio_unitario
+        id_producto: Number(result.data.id_producto),
+        cantidad: Number(result.data.cantidad),
+        precio_unitario: Number(result.data.precio_unitario)
       }
     ]
   };
@@ -118,10 +131,16 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     if (intent === 'edit') {
       const editId = Number(submission.editId);
-      await pedidosAPI.delete(editId);
-      await pedidosAPI.create(payload);
+      await deletePedido(editId);
+      const response = await createPedido(payload);
+      if (!response.ok) {
+        return { error: response.error || 'Error al actualizar' };
+      }
     } else {
-      await pedidosAPI.create(payload);
+      const response = await createPedido(payload);
+      if (!response.ok) {
+        return { error: response.error || 'Error al crear' };
+      }
     }
     return { success: true };
   } catch (error: any) {

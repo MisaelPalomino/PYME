@@ -12,9 +12,10 @@ import { Input } from '~/components/ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { formatApiError } from '~/lib/utils';
-import * as productosAPI from '~/api/producto';
-import * as categoriasAPI from '~/api/categoria';
-import * as proveedoresAPI from '~/api/proveedor';
+import { getProductos, createProducto, updateProducto, deleteProducto, type Producto, type ProductoRequest } from '~/api/producto';
+import { getCategorias, type Categoria } from '~/api/categoria';
+import { getProveedores, type Proveedor } from '~/api/proveedor';
+import { ProductoSchema } from '~/lib/schemas/producto.schema';
 
 type ProductoFormData = {
   nombre: string;
@@ -24,11 +25,11 @@ type ProductoFormData = {
   stock_actual: string;
   stock_minimo: string;
   stock_maximo: string;
-  id_categoria: string ;
+  id_categoria: string;
   id_proveedor_principal: string;
 }
 
-const columnHelper = createColumnHelper<productosAPI.Producto>();
+const columnHelper = createColumnHelper<Producto>();
 
 export async function loader() {
   const [
@@ -36,9 +37,9 @@ export async function loader() {
     { data: categorias },
     { data: proveedores }
   ] = await Promise.all([
-    productosAPI.get_all(),
-    categoriasAPI.getAll(),
-    proveedoresAPI.getAll()
+    getProductos(),
+    getCategorias(),
+    getProveedores()
   ]);
 
   return {
@@ -57,7 +58,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     nombre: '',
     sku: '',
     descripcion: '',
-    precio: '', 
+    precio: '',
     stock_actual: '',
     stock_minimo: '',
     stock_maximo: '',
@@ -119,17 +120,12 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     if (fetcher.data.success) {
       toast.success("¡Se guardó el producto correctamente!");
     }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
-      toast.error(fetcher.data.error);
-    }*/
   }, [fetcher.state, fetcher.data]);
 
   const columns = useMemo(() => [
     columnHelper.accessor("nombre", {
       header: createSortableHeader("Producto / SKU"),
       enableSorting: true,
-      size: NaN,
       enableColumnFilter: true,
 
       filterFn: (row, _, value) => {
@@ -148,28 +144,24 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     }),
     columnHelper.display({
       header: "Descripción",
-      size: NaN,
       cell: (info) => (
         <div className="px-4 py-3 text-muted-foreground">{info.row.original.descripcion}</div>
       )
     }),
     columnHelper.display({
       header: "Proveedor",
-      size: 0,
       cell: (info) => (
         <div className="px-4 py-3 text-muted-foreground">{info.row.original.proveedor_nombre}</div>
       )
     }),
     columnHelper.accessor("categoria_nombre", {
       header: createSortableHeader("Categoría"),
-      size: 0,
       cell: (info) => (
         <div className="px-4 py-3 text-muted-foreground">{info.getValue()}</div>
       )
     }),
     columnHelper.accessor("stock_actual", {
       header: createSortableHeader("Stock"),
-      size: 0,
       cell: (info) => {
         const stock = info.getValue();
         const { stock_actual, stock_maximo, stock_minimo } = info.row.original;
@@ -178,9 +170,9 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
 
         let color = "text-foreground";
         if (p <= 0.20) {
-          color = "text-destructive"; // rojo
+          color = "text-destructive";
         } else if (p <= 0.40) {
-          color = "text-yellow-600"; // amarillo
+          color = "text-yellow-600";
         }
 
         return (
@@ -192,7 +184,6 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
     }),
     columnHelper.display({
       id: "minmax",
-      size: 100,
       header: "Min / Max",
       cell: (info) => {
         const p = info.row.original;
@@ -268,10 +259,8 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
         </div>
       )}
 
-      {/* Table */}
       <TableList data={loaderData.productos} columns={columns} filters={filters} defaultSort={[{ id: "nombre", desc: false }]} />
 
-      {/* Dialogo Formulario Producto */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         setIsDialogOpen(open);
         if (!open) resetForm();
@@ -455,28 +444,36 @@ export async function action({ request }: ActionFunctionArgs) {
       return { error: "ID de producto inválido" };
     }
     try {
-      await productosAPI.delete(id);
-      return { success: true };
+      const result = await deleteProducto(id);
+      if (result.ok) {
+        return { success: true };
+      } else {
+        return { error: result.error || "Error al eliminar el producto" };
+      }
     } catch (error) {
       return { error: "Error al eliminar el producto" };
     }
   }
 
-  // De lo contrario, es guardar/actualizar
   // Validamos con el esquema de Zod
   const result = ProductoSchema.safeParse(submission);
 
   if (!result.success) {
-    // Retornamos los errores para que el formulario los muestre
     return { errors: result.error.flatten().fieldErrors };
   }
 
   const editId = submission.editId ? Number(submission.editId) : null;
   try {
     if (editId) {
-      await productosAPI.update(editId, result.data);
+      const response = await updateProducto(editId, result.data as ProductoRequest);
+      if (!response.ok) {
+        return { error: response.error || "Error al actualizar" };
+      }
     } else {
-      await productosAPI.create(result.data as ProductoDTO);
+      const response = await createProducto(result.data as ProductoRequest);
+      if (!response.ok) {
+        return { error: response.error || "Error al crear" };
+      }
     }
     return { success: true };
   } catch (error) {

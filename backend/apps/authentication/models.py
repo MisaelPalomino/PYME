@@ -12,8 +12,10 @@ class Usuario(AbstractUser):
     last_login = None
     first_name = None
     last_name = None
-    is_staff = None
-    is_superuser = None
+    
+    #No estan dejando crear un nuevo superuser para las preubas, por eso comente estas lineas
+    #is_staff = None
+    #is_superuser = None
     date_joined = None
 
     class Meta:
