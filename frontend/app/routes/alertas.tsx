@@ -108,6 +108,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
     }
 
     localStorage.setItem('read_alerts', JSON.stringify(readIds));
+    window.dispatchEvent(new Event("alerts-updated"));
   }
 
   return { success: true };

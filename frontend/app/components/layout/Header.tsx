@@ -1,7 +1,9 @@
 import { Menu, Bell, User, LogOut, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from "react";
 import { toast } from 'sonner';
+import { Link } from 'react-router';
 import * as api from '~/api/login';
+import * as dashboardAPI from '~/api/dashboard';
 
 type HeaderProps = {
   logout: () => void,
@@ -14,6 +16,7 @@ export function Header({ onMenuClick, sidebarCollapsed, currentUser, logout }: H
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUser, setShowUser] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [alerts, setAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     const loadConfig = () => {
@@ -32,22 +35,50 @@ export function Header({ onMenuClick, sidebarCollapsed, currentUser, logout }: H
       }
     };
 
+    const fetchAlerts = async () => {
+      const response = await dashboardAPI.dashboard();
+      if (response.ok) {
+        let readIds: string[] = [];
+        const stored = localStorage.getItem('read_alerts');
+        if (stored) {
+          try {
+            readIds = JSON.parse(stored) as string[];
+          } catch (e) {
+            console.error('Error parsing read_alerts in Header', e);
+          }
+        }
+
+        const activeAlerts = (response.data.alertas_activas || []).filter(
+          (al: any) => !readIds.includes(al.id_alerta.toString())
+        );
+        setAlerts(activeAlerts);
+      }
+    };
+
     loadConfig();
+    fetchAlerts();
 
     window.addEventListener("config-updated", loadConfig);
+    window.addEventListener("alerts-updated", fetchAlerts);
     window.addEventListener("storage", loadConfig);
+    window.addEventListener("storage", fetchAlerts);
+
+    const intervalId = setInterval(fetchAlerts, 30000);
 
     return () => {
       window.removeEventListener("config-updated", loadConfig);
+      window.removeEventListener("alerts-updated", fetchAlerts);
       window.removeEventListener("storage", loadConfig);
+      window.removeEventListener("storage", fetchAlerts);
+      clearInterval(intervalId);
     };
   }, []);
-  // const unreadCount = systemAlerts.filter(a => !a.read).length;
+
+  const unreadCount = alerts.length;
 
   const severityColors: Record<string, string> = {
-    critical: 'bg-destructive',
-    warning: 'bg-yellow-500',
-    info: 'bg-blue-500',
+    sin_stock: 'bg-destructive',
+    stock_bajo: 'bg-yellow-500',
   };
 
   async function handleLogOut() {
@@ -87,31 +118,43 @@ export function Header({ onMenuClick, sidebarCollapsed, currentUser, logout }: H
             className="relative p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <Bell className="w-5 h-5" />
-            {/*unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center leading-none">
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-[10px] font-bold flex items-center justify-center leading-none">
                 {unreadCount}
               </span>
-            )*/}
+            )}
           </button>
 
           {showNotifications && (
             <div className="absolute right-0 top-12 w-80 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
               <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                <span className="text-sm text-foreground">Notificaciones</span>
-                <span className="text-xs text-muted-foreground">$unreadCount sin leer</span>
+                <span className="text-sm font-semibold text-foreground">Notificaciones</span>
+                <span className="text-xs text-muted-foreground">{unreadCount} sin leer</span>
               </div>
               <div className="max-h-80 overflow-y-auto">
-                {/*systemAlerts.slice(0, 6).map(alert => (
-                  <div key={alert.id} className={`flex gap-3 px-4 py-3 border-b border-border last:border-0 hover:bg-accent/50 transition-colors ${!alert.read ? 'bg-accent/20' : ''}`}>
-                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${severityColors[alert.severity]}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-foreground leading-snug">{alert.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {formatDistanceToNow(alert.timestamp, { addSuffix: true, locale: es })}
-                      </p>
-                    </div>
+                {alerts.length > 0 ? (
+                  alerts.slice(0, 6).map(alert => (
+                    <Link
+                      to="/alertas"
+                      onClick={() => setShowNotifications(false)}
+                      key={alert.id_alerta}
+                      className="flex gap-3 px-4 py-3 border-b border-border last:border-0 hover:bg-accent/50 transition-colors block"
+                    >
+                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${severityColors[alert.tipo_alerta] || 'bg-blue-500'}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-foreground font-medium truncate">{alert.producto_nombre}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{alert.mensaje}</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {new Date(alert.fecha_creacion).toLocaleDateString("es-PE", { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="px-4 py-8 text-center text-xs text-muted-foreground">
+                    No tienes notificaciones pendientes
                   </div>
-                ))*/}
+                )}
               </div>
             </div>
           )}
