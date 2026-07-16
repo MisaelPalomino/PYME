@@ -1,12 +1,5 @@
-import axios from "axios";
+import { apiClient } from "~/lib/api-client";
 import { axios_call_to_result } from "~/lib/result";
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/dashboard",
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
 
 export type Response = {
   ventas_diarias: {
@@ -25,7 +18,7 @@ export type Response = {
     },
     alertas_totales: number,
     total_productos: number,
-    alertas_no_leidas: number, // TODO: Will it work?
+    alertas_no_leidas: number,
     pedidos_pendientes: number,
     pedidos_en_transito: number,
     productos_sin_stock: number,
@@ -59,5 +52,5 @@ export type Response = {
 };
 
 export async function dashboard() {
-  return axios_call_to_result(async () => await api.get<Response>("/dashboard/"));
+  return axios_call_to_result(async () => await apiClient.get<Response>("/api/dashboard/dashboard/"));
 }

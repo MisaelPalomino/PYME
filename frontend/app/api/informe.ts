@@ -1,29 +1,5 @@
-import axios from "axios";
+import { apiClient } from "~/lib/api-client";
 import { axios_call_to_result } from "~/lib/result";
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/informes",
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const sessionStr = localStorage.getItem("session");
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        if (session?.access) {
-          config.headers.Authorization = `Bearer ${session.access}`;
-        }
-      } catch (e) {
-        console.error('Error parsing session', e);
-      }
-    }
-  }
-  return config;
-});
 
 export type BajoStockItem = {
   id_producto: number;
@@ -75,17 +51,17 @@ export type GraficoCVItem = {
 };
 
 export async function get_bajo_stock(params: Record<string, string | number | boolean | undefined> = {}) {
-  return axios_call_to_result(async () => await api.get<BajoStockItem[]>("/bajo-stock/", { params }));
+  return axios_call_to_result(async () => await apiClient.get<BajoStockItem[]>("/api/informes/bajo-stock/", { params }));
 }
 
 export async function get_rotacion(params: Record<string, string | number | boolean | undefined> = {}) {
-  return axios_call_to_result(async () => await api.get<RotacionItem[]>("/rotacion/", { params }));
+  return axios_call_to_result(async () => await apiClient.get<RotacionItem[]>("/api/informes/rotacion/", { params }));
 }
 
 export async function get_consolidado() {
-  return axios_call_to_result(async () => await api.get<ConsolidadoData>("/consolidado/"));
+  return axios_call_to_result(async () => await apiClient.get<ConsolidadoData>("/api/informes/consolidado/"));
 }
 
 export async function get_graficos_compras_ventas(params: Record<string, string | number | boolean | undefined> = {}) {
-  return axios_call_to_result(async () => await api.get<GraficoCVItem[]>("/graficos-compras-ventas/", { params }));
+  return axios_call_to_result(async () => await apiClient.get<GraficoCVItem[]>("/api/informes/graficos-compras-ventas/", { params }));
 }

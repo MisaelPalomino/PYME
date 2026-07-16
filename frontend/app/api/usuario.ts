@@ -1,30 +1,6 @@
-import axios from "axios";
+import { apiClient } from "~/lib/api-client";
 import { axios_call_to_result } from "~/lib/result";
 import { z } from "zod";
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/auth",
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const sessionStr = localStorage.getItem("session");
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        if (session?.access) {
-          config.headers.Authorization = `Bearer ${session.access}`;
-        }
-      } catch (e) {
-        console.error('Error parsing session', e);
-      }
-    }
-  }
-  return config;
-});
 
 export const RoleEnum = z.enum(['Administrador', 'Gerente', 'Almacenero', 'Comprador'], {
   message: "Debe seleccionar un rol válido."
@@ -91,7 +67,7 @@ export function mapBackendUserToFrontend(u: UserItemBackend): User {
 }
 
 export async function get_all() {
-  const result = await axios_call_to_result(async () => await api.get<UserItemBackend[]>("/usuarios/"));
+  const result = await axios_call_to_result(async () => await apiClient.get<UserItemBackend[]>("/api/auth/usuarios/"));
   if (result.ok) {
     return { ok: true as const, data: result.data.map(mapBackendUserToFrontend) };
   }
@@ -99,19 +75,19 @@ export async function get_all() {
 }
 
 export async function get_one(id: number) {
-  return axios_call_to_result(async () => await api.get<UserItemBackend>(`/usuarios/${id}/`));
+  return axios_call_to_result(async () => await apiClient.get<UserItemBackend>(`/api/auth/usuarios/${id}/`));
 }
 
 export async function create(data: UsuarioDTO) {
-  return axios_call_to_result(async () => await api.post<UserItemBackend>("/usuarios/", data));
+  return axios_call_to_result(async () => await apiClient.post<UserItemBackend>("/api/auth/usuarios/", data));
 }
 
 export async function update(id: number, data: UsuarioDTO) {
-  return axios_call_to_result(async () => await api.put<UserItemBackend>(`/usuarios/${id}/`, data));
+  return axios_call_to_result(async () => await apiClient.put<UserItemBackend>(`/api/auth/usuarios/${id}/`, data));
 }
 
 export async function delete_usuario(id: number) {
-  return axios_call_to_result(async () => await api.delete<unknown>(`/usuarios/${id}/`));
+  return axios_call_to_result(async () => await apiClient.delete<unknown>(`/api/auth/usuarios/${id}/`));
 }
 
 export type CambiarPasswordDTO = {
@@ -121,5 +97,5 @@ export type CambiarPasswordDTO = {
 };
 
 export async function cambiarPassword(id: number, data: CambiarPasswordDTO) {
-  return axios_call_to_result(async () => await api.post<unknown>(`/usuarios/${id}/cambiar_password/`, data));
+  return axios_call_to_result(async () => await apiClient.post<unknown>(`/api/auth/usuarios/${id}/cambiar_password/`, data));
 }

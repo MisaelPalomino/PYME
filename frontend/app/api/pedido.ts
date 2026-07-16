@@ -1,6 +1,7 @@
-import axios from "axios";
+import { apiClient } from "~/lib/api-client";
 import { axios_call_to_result } from "~/lib/result";
 import { z } from "zod";
+
 export type DetallePedido = {
   id_detalle?: number;
   id_producto: number;
@@ -23,30 +24,6 @@ export type BackendPedido = {
   detalles: DetallePedido[];
   total: string | number;
 };
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/pedidos",
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const sessionStr = localStorage.getItem("session");
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        if (session?.access) {
-          config.headers.Authorization = `Bearer ${session.access}`;
-        }
-      } catch (e) {
-        console.error('Error parsing session', e);
-      }
-    }
-  }
-  return config;
-});
 
 export const PedidoSchema = z.object({
   id_proveedor: z.coerce.number().min(1, "El proveedor es requerido"),
@@ -109,7 +86,7 @@ export function mapBackendPedidoToFrontend(o: BackendPedido): PedidoFrontend {
 }
 
 export async function get_all() {
-  const result = await axios_call_to_result(async () => await api.get<BackendPedido[]>("/pedidos/"));
+  const result = await axios_call_to_result(async () => await apiClient.get<BackendPedido[]>("/api/pedidos/pedidos/"));
   if (result.ok) {
     return { ok: true as const, data: result.data.map(mapBackendPedidoToFrontend) };
   }
@@ -117,7 +94,7 @@ export async function get_all() {
 }
 
 export async function get_one(id: number) {
-  const result = await axios_call_to_result(async () => await api.get<BackendPedido>(`/pedidos/${id}/`));
+  const result = await axios_call_to_result(async () => await apiClient.get<BackendPedido>(`/api/pedidos/pedidos/${id}/`));
   if (result.ok) {
     return { ok: true as const, data: mapBackendPedidoToFrontend(result.data) };
   }
@@ -125,19 +102,19 @@ export async function get_one(id: number) {
 }
 
 export async function create(data: PedidoDTO) {
-  return axios_call_to_result(async () => await api.post<BackendPedido>("/pedidos/", data));
+  return axios_call_to_result(async () => await apiClient.post<BackendPedido>("/api/pedidos/pedidos/", data));
 }
 
 export async function updateEstado(id: number, estado: string) {
-  return axios_call_to_result(async () => await api.patch<BackendPedido>(`/pedidos/${id}/estado/`, { estado }));
+  return axios_call_to_result(async () => await apiClient.patch<BackendPedido>(`/api/pedidos/pedidos/${id}/estado/`, { estado }));
 }
 
 export async function recibir(id: number) {
-  return axios_call_to_result(async () => await api.post<BackendPedido>(`/pedidos/${id}/recibir/`));
+  return axios_call_to_result(async () => await apiClient.post<BackendPedido>(`/api/pedidos/pedidos/${id}/recibir/`));
 }
 
 async function _delete(id: number) {
-  return axios_call_to_result(async () => await api.delete<unknown>(`/pedidos/${id}/`));
+  return axios_call_to_result(async () => await apiClient.delete<unknown>(`/api/pedidos/pedidos/${id}/`));
 }
 
 export { _delete as delete };

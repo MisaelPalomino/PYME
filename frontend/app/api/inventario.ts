@@ -1,29 +1,5 @@
-import axios from "axios";
+import { apiClient } from "~/lib/api-client";
 import { axios_call_to_result } from "~/lib/result";
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/inventario",
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const sessionStr = localStorage.getItem("session");
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        if (session?.access) {
-          config.headers.Authorization = `Bearer ${session.access}`;
-        }
-      } catch (e) {
-        console.error('Error parsing session', e);
-      }
-    }
-  }
-  return config;
-});
 
 export type InventarioProducto = {
   id_producto: number;
@@ -51,9 +27,9 @@ export type HistorialProducto = {
 };
 
 export async function get_all() {
-  return axios_call_to_result(async () => await api.get<Inventario>("/stock/"));
+  return axios_call_to_result(async () => await apiClient.get<Inventario>("/api/inventario/stock/"));
 }
 
 export async function get_history(id_producto: number) {
-  return axios_call_to_result(async () => await api.get<HistorialProducto>(`/historial/${id_producto}/`));
+  return axios_call_to_result(async () => await apiClient.get<HistorialProducto>(`/api/inventario/historial/${id_producto}/`));
 }

@@ -1,13 +1,6 @@
-import axios from "axios";
+import { apiClient } from "~/lib/api-client";
 import { axios_call_to_result } from "~/lib/result";
 import * as z from "zod";
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/auth",
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
 
 export const LoginRequestSchema = z.object({
   username: z.string().nonempty("El nombre de usuario es requerido."),
@@ -29,7 +22,7 @@ export type LoginResponse = {
 };
 
 export async function login(data: LoginRequest) {
-  return axios_call_to_result(async () => await api.post<LoginResponse>("/login/", data));
+  return axios_call_to_result(async () => await apiClient.post<LoginResponse>("/api/auth/login/", data));
 }
 
 export type LogoutRequest = {
@@ -42,7 +35,7 @@ export type LogoutResponse = {
 };
 
 export async function logout(data: LogoutRequest) {
-  return axios_call_to_result(async () => await api.post<LogoutResponse>("/logout/", { refresh: data.refresh }, {
+  return axios_call_to_result(async () => await apiClient.post<LogoutResponse>("/api/auth/logout/", { refresh: data.refresh }, {
     headers: {
       Authorization: `Bearer ${data.access}`
     }

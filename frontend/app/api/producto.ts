@@ -1,30 +1,6 @@
-import axios from "axios";
+import { apiClient } from "~/lib/api-client";
 import { axios_call_to_result } from "~/lib/result";
 import * as z from "zod";
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/core",
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const sessionStr = localStorage.getItem("session");
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        if (session?.access) {
-          config.headers.Authorization = `Bearer ${session.access}`;
-        }
-      } catch (e) {
-        console.error('Error parsing session', e);
-      }
-    }
-  }
-  return config;
-});
 
 export const ProductoSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio").max(255),
@@ -59,23 +35,23 @@ export type Producto = {
 export type ProductoDTO = ProductoFormData;
 
 export async function get_all() {
-  return axios_call_to_result(async () => await api.get<Producto[]>("/productos/"));
+  return axios_call_to_result(async () => await apiClient.get<Producto[]>("/api/core/productos/"));
 }
 
 export async function get_one(id: number) {
-  return axios_call_to_result(async () => await api.get<Producto>(`/productos/${id}/`));
+  return axios_call_to_result(async () => await apiClient.get<Producto>(`/api/core/productos/${id}/`));
 }
 
 export async function create(data: ProductoDTO) {
-  return axios_call_to_result(async () => await api.post<Producto>("/productos/", data));
+  return axios_call_to_result(async () => await apiClient.post<Producto>("/api/core/productos/", data));
 }
 
 export async function update(id: number, data: ProductoDTO) {
-  return axios_call_to_result(async () => await api.put<Producto>(`/productos/${id}/`, data));
+  return axios_call_to_result(async () => await apiClient.put<Producto>(`/api/core/productos/${id}/`, data));
 }
 
 async function _delete(id: number) {
-  return axios_call_to_result(async () => await api.delete<unknown>(`/productos/${id}/`));
+  return axios_call_to_result(async () => await apiClient.delete<unknown>(`/api/core/productos/${id}/`));
 }
 
 export { _delete as delete };

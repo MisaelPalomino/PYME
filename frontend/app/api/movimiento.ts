@@ -1,30 +1,6 @@
-import axios from "axios";
+import { apiClient } from "~/lib/api-client";
 import { axios_call_to_result } from "~/lib/result";
 import * as z from "zod";
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/movimientos",
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const sessionStr = localStorage.getItem("session");
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        if (session?.access) {
-          config.headers.Authorization = `Bearer ${session.access}`;
-        }
-      } catch (e) {
-        console.error('Error parsing session', e);
-      }
-    }
-  }
-  return config;
-});
 
 export const MovimientoSchema = z.object({
   tipo_movimiento: z.enum(["Entrada", "Salida", "entrada", "salida"], {
@@ -68,7 +44,7 @@ type BackendMovimiento = {
 };
 
 export async function get_all(params: Record<string, string | number | boolean | undefined> = {}) {
-  const result = await axios_call_to_result(async () => await api.get<BackendMovimiento[]>("/", { params }));
+  const result = await axios_call_to_result(async () => await apiClient.get<BackendMovimiento[]>("/api/movimientos/", { params }));
   if (result.ok) {
     const mapped: Movimiento[] = result.data.map((m: BackendMovimiento) => ({
       id: m.id_movimiento,
@@ -85,7 +61,7 @@ export async function get_all(params: Record<string, string | number | boolean |
 }
 
 export async function get_historial_por_producto(id_producto: number) {
-  const result = await axios_call_to_result(async () => await api.get<BackendMovimiento[]>(`/producto/${id_producto}/`));
+  const result = await axios_call_to_result(async () => await apiClient.get<BackendMovimiento[]>(`/api/movimientos/producto/${id_producto}/`));
   if (result.ok) {
     const mapped: Movimiento[] = result.data.map((m: BackendMovimiento) => ({
       id: m.id_movimiento,
@@ -109,5 +85,5 @@ export async function create(data: MovimientoDTO) {
     id_producto: Number(data.id_producto),
     id_usuario: data.id_usuario ? Number(data.id_usuario) : undefined,
   };
-  return axios_call_to_result(async () => await api.post<unknown>("/", backendData));
+  return axios_call_to_result(async () => await apiClient.post<unknown>("/api/movimientos/", backendData));
 }

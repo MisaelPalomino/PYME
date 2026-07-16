@@ -1,30 +1,6 @@
-import axios from "axios";
+import { apiClient } from "~/lib/api-client";
 import { axios_call_to_result } from "~/lib/result";
 import * as z from "zod";
-
-const api = axios.create({
-  baseURL: "http://localhost:8000/api/proveedores",
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const sessionStr = localStorage.getItem("session");
-    if (sessionStr) {
-      try {
-        const session = JSON.parse(sessionStr);
-        if (session?.access) {
-          config.headers.Authorization = `Bearer ${session.access}`;
-        }
-      } catch (e) {
-        console.error('Error parsing session', e);
-      }
-    }
-  }
-  return config;
-});
 
 export const ProveedorSchema = z.object({
   nombre: z.string().min(1, "El nombre es obligatorio").max(255),
@@ -55,23 +31,23 @@ export type Proveedor = {
 export type ProveedorDTO = ProveedorFormData;
 
 export async function get_all() {
-  return axios_call_to_result(async () => await api.get<Proveedor[]>("/proveedores/"));
+  return axios_call_to_result(async () => await apiClient.get<Proveedor[]>("/api/proveedores/"));
 }
 
 export async function get_one(id: number) {
-  return axios_call_to_result(async () => await api.get<Proveedor>(`/proveedores/${id}/`));
+  return axios_call_to_result(async () => await apiClient.get<Proveedor>(`/api/proveedores/${id}/`));
 }
 
 export async function create(data: ProveedorDTO) {
-  return axios_call_to_result(async () => await api.post<Proveedor>("/proveedores/", data));
+  return axios_call_to_result(async () => await apiClient.post<Proveedor>("/api/proveedores/", data));
 }
 
 export async function update(id: number, data: ProveedorDTO) {
-  return axios_call_to_result(async () => await api.put<Proveedor>(`/proveedores/${id}/`, data));
+  return axios_call_to_result(async () => await apiClient.put<Proveedor>(`/api/proveedores/${id}/`, data));
 }
 
 async function _delete(id: number) {
-  return axios_call_to_result(async () => await api.delete<unknown>(`/proveedores/${id}/`));
+  return axios_call_to_result(async () => await apiClient.delete<unknown>(`/api/proveedores/${id}/`));
 }
 
 export { _delete as delete };
