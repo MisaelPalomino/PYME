@@ -31,23 +31,24 @@ export type Proveedor = {
 export type ProveedorDTO = ProveedorFormData;
 
 export async function get_all() {
-  return axios_call_to_result(async () => await apiClient.get<Proveedor[]>("/api/proveedores/"));
+  return axios_call_to_result(async () => await apiClient.get<Proveedor[]>("/api/proveedores/proveedores/"));
 }
 
 export async function get_one(id: number) {
-  return axios_call_to_result(async () => await apiClient.get<Proveedor>(`/api/proveedores/${id}/`));
+  return axios_call_to_result(async () => await apiClient.get<Proveedor>(`/api/proveedores/proveedores/${id}/`));
 }
 
 export async function create(data: ProveedorDTO) {
-  return axios_call_to_result(async () => await apiClient.post<Proveedor>("/api/proveedores/", data));
+  return axios_call_to_result(async () => await apiClient.post<Proveedor>("/api/proveedores/proveedores/", data));
 }
 
 export async function update(id: number, data: ProveedorDTO) {
-  return axios_call_to_result(async () => await apiClient.put<Proveedor>(`/api/proveedores/${id}/`, data));
+  return axios_call_to_result(async () => await apiClient.put<Proveedor>(`/api/proveedores/proveedores/${id}/`, data));
 }
 
 async function _delete(id: number) {
-  return axios_call_to_result(async () => await apiClient.delete<unknown>(`/api/proveedores/${id}/`));
+  return axios_call_to_result(async () => await apiClient.delete<unknown>(`/api/proveedores/proveedores/${id}/`));
 }
+
 
 export { _delete as delete };

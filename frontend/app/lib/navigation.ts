@@ -1,5 +1,5 @@
 import {
-    ArrowLeftRight,
+  ArrowLeftRight,
   LayoutDashboard,
   Package,
   Tag,
@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   BarChart3,
   Users,
+  Bell,
   type LucideIcon
 } from "lucide-react";
 
@@ -81,6 +82,12 @@ export const pages: NavigationItem[] = [
     path: "routes/predicciones.tsx",
     label: "Predicciones",
     icon: Brain,
+  },
+  {
+    url: "alertas",
+    path: "routes/alertas.tsx",
+    label: "Alertas",
+    icon: Bell,
   }
 ];
 
