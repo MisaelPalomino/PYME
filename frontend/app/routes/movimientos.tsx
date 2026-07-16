@@ -138,17 +138,14 @@ export default function Movements({ loaderData }: Route.ComponentProps) {
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
-    setDialogOpen(false);
-    resetForm();
-    // console.warn(fetcher.data);
 
     if (fetcher.data.success) {
-      toast.success("¡Se guardó el proveedor correctamente!");
-    }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
+      setDialogOpen(false);
+      resetForm();
+      toast.success("¡Se registró el movimiento de inventario correctamente!");
+    } else if (fetcher.data.error) {
       toast.error(fetcher.data.error);
-    }*/
+    }
   }, [fetcher.state, fetcher.data]);
 
   const errors = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).errors;

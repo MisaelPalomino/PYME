@@ -93,17 +93,14 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
-    setDialogOpen(false);
-    resetForm();
-    console.warn(fetcher.data);
 
     if (fetcher.data.success) {
+      setDialogOpen(false);
+      resetForm();
       toast.success("¡Se guardó el proveedor correctamente!");
-    }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
+    } else if (fetcher.data.error) {
       toast.error(fetcher.data.error);
-    }*/
+    }
   }, [fetcher.state, fetcher.data]);
 
   function openEmailTemplate(s: Proveedor) {
