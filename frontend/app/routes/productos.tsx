@@ -116,17 +116,14 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
-    setIsDialogOpen(false);
-    resetForm();
-    console.warn(fetcher.data);
 
     if (fetcher.data.success) {
+      setIsDialogOpen(false);
+      resetForm();
       toast.success("¡Se guardó el producto correctamente!");
-    }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
+    } else if (fetcher.data.error) {
       toast.error(fetcher.data.error);
-    }*/
+    }
   }, [fetcher.state, fetcher.data]);
 
   const columns = useMemo(() => [
