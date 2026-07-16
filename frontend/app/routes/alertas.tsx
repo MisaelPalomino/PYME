@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Bell, Check } from 'lucide-react';
 import { Card, CardContent } from '~/components/ui/card';
 import { Badge } from '~/components/ui/badge';
@@ -89,7 +89,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
 
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem('read_alerts');
-    let readIds: string[] = stored ? JSON.parse(stored) : [];
+    const readIds: string[] = stored ? JSON.parse(stored) : [];
 
     if (result.data.intent === 'markRead' && result.data.id) {
       if (!readIds.includes(result.data.id)) {

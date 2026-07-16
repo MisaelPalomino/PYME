@@ -5,6 +5,8 @@ import { Link } from 'react-router';
 import * as api from '~/api/login';
 import * as dashboardAPI from '~/api/dashboard';
 
+type DashboardAlert = dashboardAPI.Response["alertas_activas"][number];
+
 type HeaderProps = {
   logout: () => void,
   onMenuClick: () => void,
@@ -16,7 +18,7 @@ export function Header({ onMenuClick, sidebarCollapsed, currentUser, logout }: H
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUser, setShowUser] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<DashboardAlert[]>([]);
 
   useEffect(() => {
     const loadConfig = () => {
@@ -49,7 +51,7 @@ export function Header({ onMenuClick, sidebarCollapsed, currentUser, logout }: H
         }
 
         const activeAlerts = (response.data.alertas_activas || []).filter(
-          (al: any) => !readIds.includes(al.id_alerta.toString())
+          (al: DashboardAlert) => !readIds.includes(al.id_alerta.toString())
         );
         setAlerts(activeAlerts);
       }

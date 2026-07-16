@@ -179,7 +179,6 @@ export default function Orders({ loaderData }: Route.ComponentProps) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function handleCancelOrder(id: string) {
     if (confirm('¿Estás seguro de cancelar este pedido?')) {
       fetcher.submit(
