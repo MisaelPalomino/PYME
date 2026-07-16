@@ -1,14 +1,79 @@
 import { Navigate, Outlet } from "react-router"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "~/components/layout/Sidebar";
 import { Header } from "~/components/layout/Header";
 import { useAuth } from "~/context/AuthContext";
 import * as navigation from "~/lib/navigation";
+import { toast } from "sonner";
 
 export default function AppLayout() {
   const { session, logout } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Inactivity auto-logout
+  useEffect(() => {
+    if (!session) return;
+
+    let timerId: ReturnType<typeof setTimeout>;
+    let timeoutMinutes = 30;
+
+    const handleLogout = () => {
+      logout();
+      toast.warning("Sesión cerrada por inactividad");
+    };
+
+    const resetTimer = () => {
+      if (timerId) clearTimeout(timerId);
+      const timeoutMs = timeoutMinutes * 60 * 1000;
+      timerId = setTimeout(handleLogout, timeoutMs);
+    };
+
+    const loadConfig = () => {
+      const savedConfig = localStorage.getItem("system_config");
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          if (config && typeof config.sessionTimeout === 'number') {
+            timeoutMinutes = config.sessionTimeout;
+          }
+        } catch (e) {
+          console.error("Error parsing config in AppLayout", e);
+        }
+      }
+      resetTimer();
+    };
+
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "click"
+    ];
+
+    // Load configuration and initialize timer
+    loadConfig();
+
+    // Attach activity trackers
+    events.forEach(event => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    // Attach listeners for dynamic config changes
+    window.addEventListener("config-updated", loadConfig);
+    window.addEventListener("storage", loadConfig);
+
+    return () => {
+      if (timerId) clearTimeout(timerId);
+      events.forEach(event => {
+        window.removeEventListener(event, resetTimer);
+      });
+      window.removeEventListener("config-updated", loadConfig);
+      window.removeEventListener("storage", loadConfig);
+    };
+  }, [session, logout]);
 
   if (!session) {
     return <Navigate to={navigation.login.url} replace />

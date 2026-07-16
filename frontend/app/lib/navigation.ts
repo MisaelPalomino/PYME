@@ -10,6 +10,7 @@ import {
   BarChart3,
   Users,
   Bell,
+  Settings,
   type LucideIcon
 } from "lucide-react";
 
@@ -88,6 +89,12 @@ export const pages: NavigationItem[] = [
     path: "routes/alertas.tsx",
     label: "Alertas",
     icon: Bell,
+  },
+  {
+    url: "configuracion",
+    path: "routes/configuracion.tsx",
+    label: "Configuración",
+    icon: Settings,
   }
 ];
 

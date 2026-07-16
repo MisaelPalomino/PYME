@@ -1,5 +1,5 @@
 import { Menu, Bell, User, LogOut, ChevronDown } from 'lucide-react';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from 'sonner';
 import * as api from '~/api/login';
 
@@ -13,6 +13,35 @@ type HeaderProps = {
 export function Header({ onMenuClick, sidebarCollapsed, currentUser, logout }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUser, setShowUser] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+  useEffect(() => {
+    const loadConfig = () => {
+      const savedConfig = localStorage.getItem("system_config");
+      if (savedConfig) {
+        try {
+          const config = JSON.parse(savedConfig);
+          if (config && typeof config.notificationsEnabled === 'boolean') {
+            setNotificationsEnabled(config.notificationsEnabled);
+          }
+        } catch (e) {
+          console.error("Error parsing config in Header", e);
+        }
+      } else {
+        setNotificationsEnabled(true);
+      }
+    };
+
+    loadConfig();
+
+    window.addEventListener("config-updated", loadConfig);
+    window.addEventListener("storage", loadConfig);
+
+    return () => {
+      window.removeEventListener("config-updated", loadConfig);
+      window.removeEventListener("storage", loadConfig);
+    };
+  }, []);
   // const unreadCount = systemAlerts.filter(a => !a.read).length;
 
   const severityColors: Record<string, string> = {
@@ -51,41 +80,43 @@ export function Header({ onMenuClick, sidebarCollapsed, currentUser, logout }: H
       <div className="flex-1" />
 
       {/* Notifications */}
-      <div className="relative">
-        <button
-          onClick={() => { setShowNotifications(!showNotifications); setShowUser(false); }}
-          className="relative p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          <Bell className="w-5 h-5" />
-          {/*unreadCount > 0 && (
-            <span className="absolute top-1 right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center leading-none">
-              {unreadCount}
-            </span>
-          )*/}
-        </button>
+      {notificationsEnabled && (
+        <div className="relative">
+          <button
+            onClick={() => { setShowNotifications(!showNotifications); setShowUser(false); }}
+            className="relative p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <Bell className="w-5 h-5" />
+            {/*unreadCount > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center leading-none">
+                {unreadCount}
+              </span>
+            )*/}
+          </button>
 
-        {showNotifications && (
-          <div className="absolute right-0 top-12 w-80 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
-            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-              <span className="text-sm text-foreground">Notificaciones</span>
-              <span className="text-xs text-muted-foreground">$unreadCount sin leer</span>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {/*systemAlerts.slice(0, 6).map(alert => (
-                <div key={alert.id} className={`flex gap-3 px-4 py-3 border-b border-border last:border-0 hover:bg-accent/50 transition-colors ${!alert.read ? 'bg-accent/20' : ''}`}>
-                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${severityColors[alert.severity]}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-foreground leading-snug">{alert.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {formatDistanceToNow(alert.timestamp, { addSuffix: true, locale: es })}
-                    </p>
+          {showNotifications && (
+            <div className="absolute right-0 top-12 w-80 bg-card border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <span className="text-sm text-foreground">Notificaciones</span>
+                <span className="text-xs text-muted-foreground">$unreadCount sin leer</span>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {/*systemAlerts.slice(0, 6).map(alert => (
+                  <div key={alert.id} className={`flex gap-3 px-4 py-3 border-b border-border last:border-0 hover:bg-accent/50 transition-colors ${!alert.read ? 'bg-accent/20' : ''}`}>
+                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${severityColors[alert.severity]}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-foreground leading-snug">{alert.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatDistanceToNow(alert.timestamp, { addSuffix: true, locale: es })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))*/}
+                ))*/}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* User menu */}
       <div className="relative">
