@@ -2,34 +2,38 @@ import { useState, useEffect } from 'react';
 import { Plus, ArrowUp, ArrowDown } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import type { Movimiento } from '~/api/types';
+import * as movimientosAPI from '~/api/movimiento';
+import { MovimientoSchema, type Movimiento } from '~/api/movimiento';
+import * as productosAPI from '~/api/producto';
+import type { Producto } from '~/api/producto';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
+import { Label } from '~/components/ui/label';
+import { Input } from '~/components/ui/input';
+import { useFetcher } from "react-router";
+import { useAuth } from '~/context/AuthContext';
+import { toast } from 'sonner';
+
 import { createColumnHelper } from '@tanstack/react-table';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/movimientos";
-import { useFetcher } from "react-router";
-import { movimientosAPI, productosAPI } from '~/api/api';
-import { MovimientoSchema } from '~/lib/schemas/movimiento.schema';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
-import { Label } from '~/components/ui/label';
-import { Input } from '~/components/ui/input';
-import type { ActionFunctionArgs } from "react-router";
-import { useAuth } from '~/context/AuthContext';
-import { toast } from 'sonner';
 
-export async function loader() {
+export async function clientLoader() {
   const [
-    { data: movimientos },
-    { data: productos }
+    movimientosRes,
+    productosRes
   ] = await Promise.all([
-    movimientosAPI.getAll(),
-    productosAPI.getAll()
+    movimientosAPI.get_all(),
+    productosAPI.get_all()
   ]);
 
+  if (!movimientosRes.ok) throw new Error(movimientosRes.error);
+  if (!productosRes.ok) throw new Error(productosRes.error);
+
   return {
-    movimientos,
-    productos
+    movimientos: movimientosRes.data,
+    productos: productosRes.data
   };
 }
 
@@ -74,7 +78,7 @@ const columns = [
   }),
   columnHelper.accessor("fecha", {
     header: createSortableHeader("Fecha"),
-    sortingFn: (rowA, rowB, _) => {
+    sortingFn: (rowA, rowB) => {
       const dateA = rowA.original.fecha.getTime();
       const dateB = rowB.original.fecha.getTime();
 
@@ -112,7 +116,8 @@ const filters: Filter[] = [
 
 export default function Movements({ loaderData }: Route.ComponentProps) {
   const fetcher = useFetcher();
-  const { user } = useAuth();
+  const { session } = useAuth();
+  const user = session?.usuario;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     id_producto: '',
@@ -133,21 +138,18 @@ export default function Movements({ loaderData }: Route.ComponentProps) {
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
-    setDialogOpen(false);
-    resetForm();
-    // console.warn(fetcher.data);
 
     if (fetcher.data.success) {
-      toast.success("¡Se guardó el proveedor correctamente!");
-    }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
+      setDialogOpen(false);
+      resetForm();
+      toast.success("¡Se registró el movimiento de inventario correctamente!");
+    } else if (fetcher.data.error) {
       toast.error(fetcher.data.error);
-    }*/
+    }
   }, [fetcher.state, fetcher.data]);
 
-  const errors = fetcher.data && (fetcher.data as any).errors;
-  const generalError = fetcher.data && (fetcher.data as any).error;
+  const errors = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).errors;
+  const generalError = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).error;
 
   return (
     <div className="space-y-6">
@@ -182,7 +184,7 @@ export default function Movements({ loaderData }: Route.ComponentProps) {
           </DialogHeader>
 
           <fetcher.Form method="post" className="space-y-4">
-            <input type="hidden" name="id_usuario" value={user?.id || 1} />
+            <input type="hidden" name="id_usuario" value={user?.id_usuario || 1} />
 
             <div className="space-y-1">
               <Label htmlFor="id_producto">Producto *</Label>
@@ -195,7 +197,7 @@ export default function Movements({ loaderData }: Route.ComponentProps) {
                 onChange={(e) => setFormData({ ...formData, id_producto: e.target.value })}
               >
                 <option value="">Seleccionar producto...</option>
-                {loaderData.productos.map((p) => (
+                {loaderData.productos.map((p: Producto) => (
                   <option key={p.id_producto} value={p.id_producto}>
                     {p.nombre} ({p.sku}) — Stock: {p.stock_actual}
                   </option>
@@ -265,7 +267,7 @@ export default function Movements({ loaderData }: Route.ComponentProps) {
   );
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
 
@@ -274,16 +276,15 @@ export async function action({ request }: ActionFunctionArgs) {
     return { errors: result.error.flatten().fieldErrors };
   }
 
-  try {
-    const userId = submission.id_usuario ? Number(submission.id_usuario) : 1;
-    // console.warn(result.data);
-    await movimientosAPI.create({
-      ...result.data,
-      id_usuario: userId
-    });
+  const userId = submission.id_usuario ? Number(submission.id_usuario) : 1;
+  const res = await movimientosAPI.create({
+    ...result.data,
+    id_usuario: userId
+  });
+
+  if (res.ok) {
     return { success: true };
-  } catch (error: any) {
-    const message = error.response?.data?.error || "Error al comunicarse con el servidor";
-    return { error: message };
+  } else {
+    return { error: res.error };
   }
 }

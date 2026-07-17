@@ -23,6 +23,7 @@ export type Filter = { columnName: string, placeholder: string, defaultValue?: s
 
 export type TableProps<T extends RowData> = {
   data: T[],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   columns: ColumnDef<T, any>[],
   filters: Filter[],
   defaultSort?: SortingState,
@@ -82,7 +83,7 @@ function FilterCombobox(props: {
 }
 
 export function createSortableHeader<TData, TValue>(name: string) {
-  return ({ column }: HeaderContext<TData, TValue>) => {
+  const SortableHeader = ({ column }: HeaderContext<TData, TValue>) => {
     const sorted = column.getIsSorted();
 
     return (
@@ -100,6 +101,8 @@ export function createSortableHeader<TData, TValue>(name: string) {
       </button>
     );
   };
+  SortableHeader.displayName = `SortableHeader_${name.replace(/\s+/g, '_')}`;
+  return SortableHeader;
 }
 
 export function TableWireframe<T extends RowData>({ data, columns, defaultSort, filters, children }: TableProps<T> & { children?: (table: Table<T>) => React.ReactNode }) {

@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
 import { Button } from '~/components/ui/button';
 import type { Route } from "./+types/productos";
@@ -10,11 +9,12 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
 import { toast } from 'sonner';
-import axios from 'axios';
-import { formatApiError } from '~/lib/utils';
 import * as productosAPI from '~/api/producto';
+import { ProductoSchema, type Producto } from '~/api/producto';
 import * as categoriasAPI from '~/api/categoria';
+import type { Categoria } from '~/api/categoria';
 import * as proveedoresAPI from '~/api/proveedor';
+import type { Proveedor } from '~/api/proveedor';
 
 type ProductoFormData = {
   nombre: string;
@@ -30,21 +30,25 @@ type ProductoFormData = {
 
 const columnHelper = createColumnHelper<productosAPI.Producto>();
 
-export async function loader() {
+export async function clientLoader() {
   const [
-    { data: productos },
-    { data: categorias },
-    { data: proveedores }
+    productosRes,
+    categoriasRes,
+    proveedoresRes
   ] = await Promise.all([
     productosAPI.get_all(),
-    categoriasAPI.getAll(),
-    proveedoresAPI.getAll()
+    categoriasAPI.get_all(),
+    proveedoresAPI.get_all()
   ]);
 
+  if (!productosRes.ok) throw new Error(productosRes.error);
+  if (!categoriasRes.ok) throw new Error(categoriasRes.error);
+  if (!proveedoresRes.ok) throw new Error(proveedoresRes.error);
+
   return {
-    productos,
-    categorias,
-    proveedores
+    productos: productosRes.data,
+    categorias: categoriasRes.data,
+    proveedores: proveedoresRes.data
   };
 }
 
@@ -112,17 +116,14 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
-    setIsDialogOpen(false);
-    resetForm();
-    console.warn(fetcher.data);
 
     if (fetcher.data.success) {
+      setIsDialogOpen(false);
+      resetForm();
       toast.success("¡Se guardó el producto correctamente!");
-    }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
+    } else if (fetcher.data.error) {
       toast.error(fetcher.data.error);
-    }*/
+    }
   }, [fetcher.state, fetcher.data]);
 
   const columns = useMemo(() => [
@@ -242,12 +243,12 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
       type: "combobox",
       columnName: "categoria_nombre",
       placeholder: "Categoría",
-      items: loaderData.categorias.map(x => x.nombre)
+      items: loaderData.categorias.map((x: Categoria) => x.nombre)
     }
   ];
 
-  const errors = fetcher.data && (fetcher.data as any).errors;
-  const generalError = fetcher.data && (fetcher.data as any).error;
+  const errors = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).errors;
+  const generalError = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).error;
 
   return (
     <div className="space-y-6">
@@ -340,7 +341,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
                     onChange={(e) => setFormData({ ...formData, id_categoria: e.target.value })}
                   >
                     <option value="">Seleccionar categoría...</option>
-                    {loaderData.categorias.map((cat) => (
+                    {loaderData.categorias.map((cat: Categoria) => (
                       <option key={cat.id_categoria} value={cat.id_categoria}>
                         {cat.nombre}
                       </option>
@@ -360,7 +361,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
                     onChange={(e) => setFormData({ ...formData, id_proveedor_principal: e.target.value })}
                   >
                     <option value="">Seleccionar proveedor...</option>
-                    {loaderData.proveedores.map((prov) => (
+                    {loaderData.proveedores.map((prov: Proveedor) => (
                       <option key={prov.id_proveedor} value={prov.id_proveedor}>
                         {prov.nombre}
                       </option>
@@ -444,7 +445,7 @@ export default function Productos({ loaderData }: Route.ComponentProps) {
   );
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
   const intent = submission.intent;
@@ -454,11 +455,11 @@ export async function action({ request }: ActionFunctionArgs) {
     if (isNaN(id)) {
       return { error: "ID de producto inválido" };
     }
-    try {
-      await productosAPI.delete(id);
+    const res = await productosAPI.delete(id);
+    if (res.ok) {
       return { success: true };
-    } catch (error) {
-      return { error: "Error al eliminar el producto" };
+    } else {
+      return { error: res.error };
     }
   }
 
@@ -472,17 +473,13 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const editId = submission.editId ? Number(submission.editId) : null;
-  try {
-    if (editId) {
-      await productosAPI.update(editId, result.data);
-    } else {
-      await productosAPI.create(result.data as ProductoDTO);
-    }
+  const res = editId
+    ? await productosAPI.update(editId, result.data)
+    : await productosAPI.create(result.data);
+
+  if (res.ok) {
     return { success: true };
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return { error: formatApiError(error.response?.data) };
-    }
-    return { error: "Error al comunicarse con el servidor" };
+  } else {
+    return { error: res.error };
   }
 }

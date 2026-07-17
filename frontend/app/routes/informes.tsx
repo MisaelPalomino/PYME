@@ -12,89 +12,47 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useSearchParams } from 'react-router';
 import type { Route } from './+types/informes';
-import { categoriasAPI, informesAPI } from '~/api/api';
+import * as categoriasAPI from '~/api/categoria';
+import * as informesAPI from '~/api/informe';
 import { toast } from 'sonner';
 
-type BajoStockItem = {
-  id_producto: number;
-  nombre: string;
-  sku: string;
-  categoria: string;
-  stock_actual: number;
-  stock_minimo: number;
-  deficit: number;
-  lead_time_dias: number;
-  estado: string;
-};
-
-type RotacionItem = {
-  id_producto: number;
-  nombre: string;
-  sku: string;
-  ventas_periodo: number;
-  stock_promedio: number;
-  indice_rotacion: string | null;
-};
-
-type ConsolidadoData = {
-  resumen: {
-    productos_bajo_stock: number;
-    alertas_criticas_ia: number;
-    mae_promedio: string | null;
-    mape_promedio: string | null;
-  };
-  ultimas_semanas: {
-    periodo: string;
-    ventas: string;
-    compras: string;
-  }[];
-  metricas_por_producto: {
-    id_producto: number;
-    nombre: string;
-    mae: string | null;
-    mape: string | null;
-    estado_modelo: string | null;
-    alerta: string;
-  }[];
-};
-
-type GraficoCVItem = {
-  periodo: string;
-  ventas: string;
-  compras: string;
-};
-
-export async function loader({ request }: Route.LoaderArgs) {
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   const url = new URL(request.url);
   const categoria = url.searchParams.get('categoria') || 'all';
   const periodo = url.searchParams.get('periodo') || 'month';
 
-  const apiParams: Record<string, any> = {};
+  const apiParams: Record<string, string | number | boolean | undefined> = {};
   if (categoria !== 'all') {
     apiParams.categoria = Number(categoria);
   }
   apiParams.periodo = periodo;
 
   const [
-    { data: categorias },
-    { data: bajoStock },
-    { data: rotacion },
-    { data: consolidado },
-    { data: graficosCV }
+    categoriasRes,
+    bajoStockRes,
+    rotacionRes,
+    consolidadoRes,
+    graficosCVRes
   ] = await Promise.all([
-    categoriasAPI.getAll(),
-    informesAPI.getBajoStock(apiParams),
-    informesAPI.getRotacion(apiParams),
-    informesAPI.getConsolidado(),
-    informesAPI.getGraficosComprasVentas(apiParams)
+    categoriasAPI.get_all(),
+    informesAPI.get_bajo_stock(apiParams),
+    informesAPI.get_rotacion(apiParams),
+    informesAPI.get_consolidado(),
+    informesAPI.get_graficos_compras_ventas(apiParams)
   ]);
 
+  if (!categoriasRes.ok) throw new Error(categoriasRes.error);
+  if (!bajoStockRes.ok) throw new Error(bajoStockRes.error);
+  if (!rotacionRes.ok) throw new Error(rotacionRes.error);
+  if (!consolidadoRes.ok) throw new Error(consolidadoRes.error);
+  if (!graficosCVRes.ok) throw new Error(graficosCVRes.error);
+
   return {
-    categorias,
-    bajoStock: bajoStock as BajoStockItem[],
-    rotacion: rotacion as RotacionItem[],
-    consolidado: consolidado as ConsolidadoData,
-    graficosCV: graficosCV as GraficoCVItem[],
+    categorias: categoriasRes.data,
+    bajoStock: bajoStockRes.data,
+    rotacion: rotacionRes.data,
+    consolidado: consolidadoRes.data,
+    graficosCV: graficosCVRes.data,
     categoria,
     periodo
   };
@@ -153,14 +111,11 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
   const monthlySalesData = useMemo(() => {
     return loaderData.graficosCV.map(g => {
       const date = new Date(g.periodo);
-      let label = '';
-      if (periodFilter === 'week') {
-        label = format(date, 'EEEE', { locale: es });
-      } else if (periodFilter === 'month') {
-        label = format(date, 'dd/MM', { locale: es });
-      } else {
-        label = format(date, 'MMM yy', { locale: es });
-      }
+      const label = periodFilter === 'week'
+        ? format(date, 'EEEE', { locale: es })
+        : periodFilter === 'month'
+        ? format(date, 'dd/MM', { locale: es })
+        : format(date, 'MMM yy', { locale: es });
       return {
         name: label,
         ventas: Number(g.ventas),
@@ -212,7 +167,7 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
           { id: 'low_stock', label: 'Bajo Stock' },
           { id: 'rotation', label: 'Rotación' },
           { id: 'consolidated', label: 'Consolidado' },
-          { id: 'charts', label: 'Gráficos Compras/Ventas' },
+          { id: 'charts', label: 'Gráticos Compras/Ventas' },
         ].map(tab => (
           <button
             key={tab.id}
@@ -443,7 +398,7 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                       <XAxis dataKey="week" tick={{ fontSize: 11 }} stroke="var(--color-muted-foreground)" />
                       <YAxis tick={{ fontSize: 11 }} stroke="var(--color-muted-foreground)" tickFormatter={v => `S/${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(v: any) => [`S/ ${Number(v || 0).toLocaleString()}`, '']} />
+                      <Tooltip formatter={(v: unknown) => [`S/ ${Number(v || 0).toLocaleString()}`, '']} />
                       <Legend />
                       <Area type="monotone" dataKey="ventas" name="Ventas" stroke="var(--color-chart-1)" fill="url(#gVentas)" strokeWidth={2} />
                       <Area type="monotone" dataKey="compras" name="Compras" stroke="var(--color-chart-2)" fill="url(#gCompras)" strokeWidth={2} />
@@ -531,7 +486,7 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="var(--color-muted-foreground)" />
                     <YAxis tick={{ fontSize: 11 }} stroke="var(--color-muted-foreground)" tickFormatter={v => `S/${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: any) => [`S/ ${Number(v || 0).toLocaleString()}`, '']} />
+                    <Tooltip formatter={(v: unknown) => [`S/ ${Number(v || 0).toLocaleString()}`, '']} />
                     <Legend />
                     <Bar dataKey="ventas" name="Ventas" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="compras" name="Compras" fill="var(--color-chart-2)" radius={[4, 4, 0, 0]} />
@@ -543,7 +498,7 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
                 </div>
               )}
               <div className="p-3 bg-muted/30 rounded-lg text-xs text-muted-foreground">
-                * Para exportar el gráfico como imagen, haz clic derecho sobre el gráfico y selecciona "Guardar imagen".
+                 * Para exportar el gráfico como imagen, haz clic derecho sobre el gráfico y selecciona &quot;Guardar imagen&quot;.
               </div>
             </CardContent>
           </Card>

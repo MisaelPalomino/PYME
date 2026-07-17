@@ -1,14 +1,14 @@
 import { Button } from '~/components/ui/button';
 import { toast } from 'sonner';
 import * as api from "~/api/login";
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CircleX } from 'lucide-react';
 import { useAuth } from '~/context/AuthContext';
 
 export default function Login() {
   const { register, handleSubmit, formState: { errors } } = useForm<api.LoginRequest>({
-    resolver: zodResolver(api.LoginRequestSchema),
+    resolver: zodResolver(api.LoginRequestSchema as unknown as Parameters<typeof zodResolver>[0]) as unknown as Resolver<api.LoginRequest>,
   });
   const { login } = useAuth();
 

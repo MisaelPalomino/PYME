@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import { Brain, RefreshCw, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { useMemo } from 'react';
+import { Brain, RefreshCw, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -10,37 +10,27 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { createSortableHeader, TableList, type Filter } from '~/components/Table';
 import type { Route } from "./+types/predicciones";
 import { useFetcher } from "react-router";
-import { iaAPI } from "~/api/api";
-import type { ActionFunctionArgs } from "react-router";
-import type { Prediccion } from '~/api/types';
+import * as iaAPI from "~/api/ia";
+import type { Prediccion } from '~/api/ia';
 
-export async function loader() {
-  const { data: predictions } = await iaAPI.getAll();
-  console.log(predictions);
-  return { predictions };
+export async function clientLoader() {
+  const res = await iaAPI.get_all();
+  if (!res.ok) throw new Error(res.error);
+  return { predictions: res.data };
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "train") {
-    try {
-      await iaAPI.generarTodos();
-      return { success: true, trainedAt: new Date().toISOString() };
-    } catch (e: any) {
-      console.error(e);
-      return { error: "Error al reentrenar el modelo de IA" };
-    }
+    const res = await iaAPI.generar_todos();
+    return res.ok 
+      ? { success: true, trainedAt: new Date().toISOString() }
+      : { error: res.error };
   }
   return null;
 }
-
-const modelStatusConfig = {
-  entrenado: { label: 'Entrenado', icon: CheckCircle, color: 'text-green-500', badge: 'outline' as const },
-  sin_datos: { label: 'Sin datos', icon: AlertTriangle, color: 'text-yellow-500', badge: 'secondary' as const },
-  desactualizado: { label: 'Desactualizado', icon: Clock, color: 'text-destructive', badge: 'destructive' as const },
-};
 
 const alertConfig = {
   critical: { label: 'Rotura ≤3 días', badge: 'destructive' as const },
@@ -168,7 +158,8 @@ export default function Predictions({ loaderData }: Route.ComponentProps) {
   const predictions = loaderData.predictions;
 
   const training = fetcher.state !== 'idle';
-  const trainedAt = fetcher.data && (fetcher.data as any).success ? new Date((fetcher.data as any).trainedAt) : null;
+  const trainData = fetcher.data as { success?: boolean; trainedAt?: string } | undefined;
+  const trainedAt = trainData?.success && trainData.trainedAt ? new Date(trainData.trainedAt) : null;
 
   const handleTrain = () => {
     fetcher.submit({ intent: "train" }, { method: "post" });

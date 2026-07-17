@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
 import { Plus, Edit2, Trash2, Mail, Phone, Clock, FileText } from 'lucide-react';
 import type { Route } from "./+types/proveedores";
@@ -8,16 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
-import { proveedoresAPI } from '~/api/api';
-import type { Proveedor } from '~/api/types';
-import { ProveedorSchema } from '~/lib/schemas/proveedor.schema';
+import * as proveedoresAPI from '~/api/proveedor';
+import { ProveedorSchema, type Proveedor } from '~/api/proveedor';
 import { createColumnHelper } from '@tanstack/react-table';
 import { TableCard, type Filter } from '~/components/Table';
 import { Badge } from '~/components/ui/badge';
 import { toast } from 'sonner';
 
-export async function loader({ }: Route.LoaderArgs) {
-  const response = await proveedoresAPI.getAll();
+export async function clientLoader() {
+  const response = await proveedoresAPI.get_all();
+  if (!response.ok) throw new Error(response.error);
   return {
     proveedores: response.data
   };
@@ -94,17 +93,14 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
-    setDialogOpen(false);
-    resetForm();
-    console.warn(fetcher.data);
 
     if (fetcher.data.success) {
+      setDialogOpen(false);
+      resetForm();
       toast.success("¡Se guardó el proveedor correctamente!");
-    }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
+    } else if (fetcher.data.error) {
       toast.error(fetcher.data.error);
-    }*/
+    }
   }, [fetcher.state, fetcher.data]);
 
   function openEmailTemplate(s: Proveedor) {
@@ -112,8 +108,8 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
     setEmailDialogOpen(true);
   }
 
-  const errors = fetcher.data && (fetcher.data as any).errors;
-  const generalError = fetcher.data && (fetcher.data as any).error;
+  const errors = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).errors;
+  const generalError = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).error;
 
   function getComplianceColor(rate: number) {
     if (rate >= 90) return 'text-green-600';
@@ -200,7 +196,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
                 </div>
 
                 <div className="flex flex-wrap gap-1">
-                  {item.categorias.map(c => (
+                  {item.categorias.map((c: { nombre: string; id_categoria: number }) => (
                     <Badge key={c.id_categoria} variant="outline" className="text-xs">{c.nombre}</Badge>
                   ))}
                   {item.categorias.length > 3 && (
@@ -335,7 +331,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
   );
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
   const intent = submission.intent;
@@ -345,12 +341,11 @@ export async function action({ request }: ActionFunctionArgs) {
     if (isNaN(id)) {
       return { error: "ID de proveedor inválido" };
     }
-    try {
-      await proveedoresAPI.delete(id);
+    const res = await proveedoresAPI.delete(id);
+    if (res.ok) {
       return { success: true };
-    } catch (error) {
-      console.error(error);
-      return { error: "Error al eliminar el proveedor" };
+    } else {
+      return { error: res.error };
     }
   }
 
@@ -362,15 +357,13 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const editId = submission.editId ? Number(submission.editId) : null;
-  try {
-    if (editId) {
-      await proveedoresAPI.update(editId, result.data);
-    } else {
-      await proveedoresAPI.create(result.data);
-    }
+  const res = editId
+    ? await proveedoresAPI.update(editId, result.data)
+    : await proveedoresAPI.create(result.data);
+
+  if (res.ok) {
     return { success: true };
-  } catch (error) {
-    console.error(error);
-    return { error: "Error al comunicarse con el servidor" };
+  } else {
+    return { error: res.error };
   }
 }

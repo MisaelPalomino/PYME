@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import type { ActionFunctionArgs } from "react-router";
 import { useFetcher } from "react-router";
-import { categoriasAPI } from '~/api/api';
-import type { Categoria } from '~/api/types';
+import * as categoriasAPI from '~/api/categoria';
+import { CategoriaSchema, type Categoria } from '~/api/categoria';
 import { Button } from '~/components/ui/button';
 import { useAuth } from '~/context/AuthContext';
 import type { Route } from "./+types/categorias";
@@ -13,11 +12,11 @@ import { TableCard, type Filter } from '~/components/Table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '~/components/ui/dialog';
 import { Label } from '~/components/ui/label';
 import { Input } from '~/components/ui/input';
-import { CategoriaSchema } from '~/lib/schemas/categoria.schema';
 import { toast } from 'sonner';
 
-export async function loader() {
-  const response = await categoriasAPI.getAll();
+export async function clientLoader() {
+  const response = await categoriasAPI.get_all();
+  if (!response.ok) throw new Error(response.error);
   return {
     categorias: response.data
   };
@@ -40,7 +39,8 @@ const filters: Filter[] = [
 ];
 
 export default function Categorias({ loaderData }: Route.ComponentProps) {
-  const { user } = useAuth();
+  const { session } = useAuth();
+  const user = session?.usuario;
   const fetcher = useFetcher();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -85,21 +85,18 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
   // Cierra el diálogo tras un envío exitoso
   useEffect(() => {
     if (fetcher.state !== "idle" || !fetcher.data) return;
-    setIsDialogOpen(false);
-    resetForm();
-    console.warn(fetcher.data);
 
     if (fetcher.data.success) {
+      setIsDialogOpen(false);
+      resetForm();
       toast.success("¡Se guardó la categoría correctamente!");
-    }
-    /* TODO: Parece que alguien hizo que se muestre directamente
-    else {
+    } else if (fetcher.data.error) {
       toast.error(fetcher.data.error);
-    }*/
+    }
   }, [fetcher.state, fetcher.data]);
 
-  const errors = fetcher.data && (fetcher.data as any).errors;
-  const generalError = fetcher.data && (fetcher.data as any).error;
+  const errors = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).errors;
+  const generalError = fetcher.data && (fetcher.data as { errors?: Record<string, string[]>; error?: string }).error;
 
   return (
     <div className="space-y-6">
@@ -221,7 +218,7 @@ export default function Categorias({ loaderData }: Route.ComponentProps) {
   );
 }
 
-export async function action({ request }: ActionFunctionArgs) {
+export async function clientAction({ request }: Route.ClientActionArgs) {
   const formData = await request.formData();
   const submission = Object.fromEntries(formData);
   const intent = submission.intent;
@@ -231,12 +228,11 @@ export async function action({ request }: ActionFunctionArgs) {
     if (isNaN(id)) {
       return { error: "ID de categoría inválido" };
     }
-    try {
-      await categoriasAPI.delete(id);
+    const res = await categoriasAPI.delete(id);
+    if (res.ok) {
       return { success: true };
-    } catch (error) {
-      console.error(error);
-      return { error: "Error al eliminar la categoría" };
+    } else {
+      return { error: res.error };
     }
   }
 
@@ -248,15 +244,13 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const editId = submission.editId ? Number(submission.editId) : null;
-  try {
-    if (editId) {
-      await categoriasAPI.update(editId, result.data);
-    } else {
-      await categoriasAPI.create(result.data);
-    }
+  const res = editId
+    ? await categoriasAPI.update(editId, result.data)
+    : await categoriasAPI.create(result.data);
+
+  if (res.ok) {
     return { success: true };
-  } catch (error) {
-    console.error(error);
-    return { error: "Error al comunicarse con el servidor" };
+  } else {
+    return { error: res.error };
   }
 }

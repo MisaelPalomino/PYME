@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/com
 import { ScrollArea, ScrollBar } from "~/components/ui/scroll-area";
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Badge } from "~/components/ui/badge";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 
-export async function loader() {
+export async function clientLoader() {
   const response = await api.dashboard();
   if (!response.ok) {
     // TODO: Ni idea que hacer con el error
@@ -156,7 +156,12 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <ScrollArea className="h-[500px] pr-3">
             <div className="space-y-3">
               {loaderData.alertas_activas.map((alert) => {
-                let cfg: any = { bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-blue-300 dark:border-blue-700', badge: 'secondary' as const, dot: 'bg-blue-500' };
+                let cfg: { bg: string; border: string; badge: "destructive" | "secondary" | "default" | "outline"; dot: string } = {
+                  bg: 'bg-blue-50 dark:bg-blue-900/10',
+                  border: 'border-blue-300 dark:border-blue-700',
+                  badge: 'secondary',
+                  dot: 'bg-blue-500'
+                };
                 switch (alert.tipo_alerta) {
                   case "sin_stock":
                     cfg = { bg: 'bg-destructive/10', border: 'border-destructive/30', badge: 'destructive' as const, dot: 'bg-destructive' };
@@ -394,6 +399,6 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </Card>
         </div>
       </div>
-    </div >
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext } from 'react';
 import type { ReactNode } from 'react';
 import * as api from "~/api/login";
 
@@ -12,27 +12,21 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/*
-TODO
-[nonuya] 12/07/2026
-Acá hay un """""error""""" que debería (o no) verse.
-La cuestión es que estoy guardando todo en el localStorage. Cosa que creo no debería hacerse.
-Siento que se tiene que separar los tokens con la información del Usuario, tal vez con diferentes llamadas al API o yo que sé.
-La cuestión es que como no sé hacer esto lo dejo acá.
-¿Qué de malo tiene? Dibuja la pantalla de login y luego redirecciona hacia donde debería ser.
-Personalmente no me gusta.
-Si alguien encuentra otra solución sería genial!
-Tal vez Cookies¿???¡???¡¡?
-*/
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<api.LoginResponse | null>(null);
-
-  useEffect(() => {
-    const session = localStorage.getItem(COOKIE_KEY);
-    if (session) {
-      setSession(JSON.parse(session) as api.LoginResponse);
+  const [session, setSession] = useState<api.LoginResponse | null>(() => {
+    if (typeof window !== 'undefined') {
+      const sessionStr = localStorage.getItem(COOKIE_KEY);
+      if (sessionStr) {
+        try {
+          return JSON.parse(sessionStr) as api.LoginResponse;
+        } catch (e) {
+          console.error('Error parsing session from localStorage', e);
+          return null;
+        }
+      }
     }
-  }, []);
+    return null;
+  });
 
   const login = (session: api.LoginResponse) => {
     setSession(session);
