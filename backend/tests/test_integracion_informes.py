@@ -2,6 +2,7 @@
 Pruebas de integración: Informes y agregación de datos.
 Verifica que los informes agregan correctamente datos de múltiples módulos.
 """
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -27,7 +28,7 @@ class InformesIntegrationTest(TestCase):
         self.client = APIClient()
         self.usuario = Usuario.objects.create(
             username="user", nombre="User", email="u@test.com",
-            rol="Almacenero", password="pass123",
+            rol="Almacenero", password=make_password("pass123"),
         )
         response = self.client.post(
             "/api/auth/login/",
@@ -149,7 +150,7 @@ class InventarioAlertasIntegrationTest(TestCase):
         self.client = APIClient()
         self.usuario = Usuario.objects.create(
             username="user", nombre="User", email="u@test.com",
-            rol="Almacenero", password="pass123",
+            rol="Almacenero", password=make_password("pass123"),
         )
         response = self.client.post(
             "/api/auth/login/",

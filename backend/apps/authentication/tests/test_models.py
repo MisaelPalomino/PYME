@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from apps.authentication.models import Usuario
 
@@ -9,7 +10,7 @@ class UsuarioModelTest(TestCase):
             nombre="Test User",
             email="test@test.com",
             rol="Gerente",
-            password="pass123",
+            password=make_password("pass123"),
         )
 
     def test_str(self):
@@ -35,5 +36,5 @@ class UsuarioModelTest(TestCase):
                 nombre="Other",
                 email="test@test.com",
                 rol="Almacenero",
-                password="pass456",
+                password=make_password("pass456"),
             )

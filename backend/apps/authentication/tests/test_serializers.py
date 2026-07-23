@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from apps.authentication.models import Usuario
 from apps.authentication.serializer import (
@@ -15,7 +16,7 @@ class LoginSerializerTest(TestCase):
             nombre="Test",
             email="test@test.com",
             rol="Gerente",
-            password="pass123",
+            password=make_password("pass123"),
         )
 
     def test_login_valido(self):
@@ -94,7 +95,7 @@ class RegistroUsuarioSerializerTest(TestCase):
             nombre="Existing",
             email="exists@test.com",
             rol="Gerente",
-            password="pass123",
+            password=make_password("pass123"),
         )
         serializer = RegistroUsuarioSerializer(
             data={
@@ -117,7 +118,7 @@ class UsuarioSerializerTest(TestCase):
             nombre="Test",
             email="test@test.com",
             rol="Gerente",
-            password="pass123",
+            password=make_password("pass123"),
         )
 
     def test_serializer_campos(self):

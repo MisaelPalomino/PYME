@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from apps.inventario.models import Alerta, Notificacion
 from apps.core.models import Categoria, Producto, Proveedor
@@ -35,7 +36,7 @@ class NotificacionModelTest(TestCase):
     def setUp(self):
         self.usuario = Usuario.objects.create(
             username="user", nombre="User", email="u@test.com",
-            rol="Almacenero", password="pass123",
+            rol="Almacenero", password=make_password("pass123"),
         )
         self.notificacion = Notificacion.objects.create(
             id_usuario=self.usuario,

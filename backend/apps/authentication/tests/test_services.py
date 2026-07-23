@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import check_password, make_password
 from django.test import TestCase
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
@@ -13,7 +14,7 @@ class AuthServiceTest(TestCase):
             nombre="Test User",
             email="test@test.com",
             rol="Gerente",
-            password="pass123",
+            password=make_password("pass123"),
         )
 
     def test_login(self):
@@ -39,14 +40,14 @@ class UsuarioServiceTest(TestCase):
             nombre="User 1",
             email="user1@test.com",
             rol="Gerente",
-            password="pass123",
+            password=make_password("pass123"),
         )
         self.usuario2 = Usuario.objects.create(
             username="user2",
             nombre="User 2",
             email="user2@test.com",
             rol="Almacenero",
-            password="pass456",
+            password=make_password("pass456"),
         )
 
     def test_listar(self):
@@ -70,7 +71,7 @@ class UsuarioServiceTest(TestCase):
                     nombre="New",
                     email="new@test.com",
                     rol="Comprador",
-                    password="newpass",
+                    password=make_password("newpass"),
                 )
 
         usuario = UsuarioService.crear(FakeSerializer())
@@ -105,7 +106,7 @@ class UsuarioServiceTest(TestCase):
             },
         )
         self.usuario1.refresh_from_db()
-        self.assertEqual(self.usuario1.password, "newpass")
+        self.assertTrue(check_password("newpass", self.usuario1.password))
 
     def test_cambiar_password_incorrecta(self):
         with self.assertRaises(serializers.ValidationError):

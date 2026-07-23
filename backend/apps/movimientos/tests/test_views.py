@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -30,7 +31,7 @@ class MovimientoListCreateViewTest(TestCase):
         )
         self.usuario = Usuario.objects.create(
             username="user", nombre="User", email="u@test.com",
-            rol="Almacenero", password="pass123",
+            rol="Almacenero", password=make_password("pass123"),
         )
         response = self.client.post(
             "/api/auth/login/",

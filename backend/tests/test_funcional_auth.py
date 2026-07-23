@@ -2,6 +2,7 @@
 Pruebas funcionales: Flujo completo de autenticación.
 Tests: login → obtener usuario → logout → verificar sesión cerrada.
 """
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -25,7 +26,7 @@ class AuthFlowFunctionalTest(TestCase):
             nombre="Test User",
             email="test@test.com",
             rol="Gerente",
-            password="pass123",
+            password=make_password("pass123"),
         )
 
     def test_login_obtener_usuario_logout(self):
@@ -69,7 +70,7 @@ class AuthFlowFunctionalTest(TestCase):
         # 1. Login como admin para poder registrar
         admin = Usuario.objects.create(
             username="admin", nombre="Admin", email="admin@test.com",
-            rol="Administrador", password="admin123",
+            rol="Administrador", password=make_password("admin123"),
         )
         response = self.client.post(
             "/api/auth/login/",
@@ -160,7 +161,7 @@ class AuthFlowFunctionalTest(TestCase):
         # 2. Desactivar usuario (como admin)
         admin = Usuario.objects.create(
             username="admin", nombre="Admin", email="admin@test.com",
-            rol="Administrador", password="admin123",
+            rol="Administrador", password=make_password("admin123"),
         )
         response = self.client.post(
             "/api/auth/login/",

@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -20,7 +21,7 @@ class LoginViewTest(TestCase):
             nombre="Test",
             email="test@test.com",
             rol="Gerente",
-            password="pass123",
+            password=make_password("pass123"),
         )
 
     def test_login_exitoso(self):
@@ -64,7 +65,7 @@ class LogoutViewTest(TestCase):
             nombre="Test",
             email="test@test.com",
             rol="Gerente",
-            password="pass123",
+            password=make_password("pass123"),
         )
         response = self.client.post(
             "/api/auth/login/",
@@ -115,7 +116,7 @@ class UsuarioViewSetTest(TestCase):
             nombre="Admin",
             email="admin@test.com",
             rol="Administrador",
-            password="admin123",
+            password=make_password("admin123"),
         )
         response = self.client.post(
             "/api/auth/login/",

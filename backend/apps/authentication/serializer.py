@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import check_password, make_password
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -16,7 +17,7 @@ class LoginSerializer(serializers.Serializer):
         except Usuario.DoesNotExist:
             raise serializers.ValidationError("Credenciales inválidas.")
 
-        if user.password != attrs['password']:
+        if not check_password(attrs['password'], user.password):
             raise serializers.ValidationError("Credenciales inválidas.")
 
         if not user.activo:
@@ -64,7 +65,7 @@ class RegistroUsuarioSerializer(serializers.ModelSerializer):
         validated_data.pop('password2')
         password = validated_data.pop('password')
         user = Usuario(**validated_data)
-        user.password = password
+        user.password = make_password(password)
         user.save()
         return user
 

@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password, check_password
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
@@ -62,9 +63,9 @@ class UsuarioService:
     @transaction.atomic
     def cambiar_password(usuario, serializer_data):
         password_actual = serializer_data['password_actual']
-        if usuario.password != password_actual:
+        if not check_password(password_actual, usuario.password):
             raise serializers.ValidationError(
                 {"password_actual": "La contraseña actual es incorrecta."}
             )
-        usuario.password = serializer_data['password_nuevo']
+        usuario.password = make_password(serializer_data['password_nuevo'])
         usuario.save(update_fields=['password'])

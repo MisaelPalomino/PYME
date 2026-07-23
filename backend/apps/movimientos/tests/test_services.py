@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework import serializers
@@ -23,7 +24,7 @@ class MovimientoServiceTest(TestCase):
         )
         self.usuario = Usuario.objects.create(
             username="user", nombre="User", email="u@test.com",
-            rol="Almacenero", password="pass123",
+            rol="Almacenero", password=make_password("pass123"),
         )
 
     def test_registrar_entrada(self):
