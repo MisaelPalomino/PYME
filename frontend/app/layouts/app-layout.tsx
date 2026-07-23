@@ -1,13 +1,15 @@
-import { Navigate, Outlet } from "react-router"
+import { Navigate, Outlet, useLocation } from "react-router"
 import { useState, useEffect } from "react";
 import { Sidebar } from "~/components/layout/Sidebar";
 import { Header } from "~/components/layout/Header";
 import { useAuth } from "~/context/AuthContext";
 import * as navigation from "~/lib/navigation";
+import { canAccessPage } from "~/lib/rbac";
 import { toast } from "sonner";
 
 export default function AppLayout() {
   const { session, logout } = useAuth();
+  const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -77,6 +79,12 @@ export default function AppLayout() {
 
   if (!session) {
     return <Navigate to={navigation.login.url} replace />
+  }
+
+  const pageKey = location.pathname.replace(/^\//, "");
+  if (pageKey && !canAccessPage(session.usuario.rol, pageKey)) {
+    toast.error("No tienes acceso a esta página");
+    return <Navigate to={navigation.dashboard_url} replace />
   }
 
   return (
