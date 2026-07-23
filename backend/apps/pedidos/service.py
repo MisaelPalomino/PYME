@@ -3,6 +3,9 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
+from apps.movimientos.models import Movimiento
+from apps.inventario.models import Alerta
+
 from .models import Pedido, DetallePedido
 from .utils import PedidoCalculos
 
@@ -90,9 +93,34 @@ class PedidoService:
         pedido.fecha_recepcion = timezone.now()
         pedido.save()
 
-        # TODO: Integración con inventario
-        # from apps.inventario.service import InventarioService
-        # InventarioService.registrar_entrada(pedido)
+        for detalle in pedido.detallepedido_set.select_related(
+            "id_producto"
+        ).all():
+            producto = detalle.id_producto
+            producto.stock_actual += detalle.cantidad
+            producto.save(update_fields=["stock_actual"])
+
+            Movimiento.objects.create(
+                id_producto=producto,
+                tipo_movimiento="entrada",
+                cantidad=detalle.cantidad,
+                observaciones=f"Recepción de Pedido #{pedido.id_pedido}",
+                fecha=timezone.now(),
+                id_usuario=pedido.id_usuario,
+            )
+
+            if producto.stock_actual <= producto.stock_minimo:
+                tipo = (
+                    "critico" if producto.stock_actual == 0 else "bajo"
+                )
+                Alerta.objects.update_or_create(
+                    id_producto=producto,
+                    tipo_alerta=tipo,
+                    leida=False,
+                    defaults={
+                        "mensaje": f"Stock {tipo}: {producto.nombre}"
+                    },
+                )
 
         return pedido
 
