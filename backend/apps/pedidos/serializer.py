@@ -68,6 +68,17 @@ class PedidoSerializer(serializers.ModelSerializer):
             "estado",
         ]
 
+    def to_internal_value(self, data):
+        detalles_input = data.get("detalles")
+        result = super().to_internal_value(
+            {k: v for k, v in data.items() if k != "detalles"}
+        )
+        if detalles_input is not None:
+            serializer = DetallePedidoSerializer(data=detalles_input, many=True)
+            serializer.is_valid(raise_exception=True)
+            result["detalles"] = serializer.validated_data
+        return result
+
     def validate_detalles(self, value):
         """
         Valida que los detalles del pedido no estén vacíos

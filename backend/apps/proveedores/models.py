@@ -16,21 +16,27 @@ class Proveedor(models.Model):
 
     @property
     def porcentaje_cumplimiento(self):
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT porcentaje_cumplimiento_proveedor(%s)",
-                [self.id_proveedor],
-            )
-            return cursor.fetchone()[0]
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT porcentaje_cumplimiento_proveedor(%s)",
+                    [self.id_proveedor],
+                )
+                return cursor.fetchone()[0]
+        except Exception:
+            return 0
 
     @property
     def categorias(self):
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT categorias_proveedor(%s)",
-                [self.id_proveedor],
-            )
-            return json.loads(cursor.fetchone()[0])
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT categorias_proveedor(%s)",
+                    [self.id_proveedor],
+                )
+                return json.loads(cursor.fetchone()[0])
+        except Exception:
+            return []
 
     def __str__(self):
         return self.nombre
