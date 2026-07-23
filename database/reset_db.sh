@@ -6,3 +6,4 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 python3 ../backend/manage.py migrate
 "$SCRIPT_DIR/scripts/create.sh"
 "$SCRIPT_DIR/scripts/seed.sh"
+python3 ../backend/manage.py hash_all_passwords
