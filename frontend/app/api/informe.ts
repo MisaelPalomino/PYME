@@ -65,3 +65,28 @@ export async function get_consolidado() {
 export async function get_graficos_compras_ventas(params: Record<string, string | number | boolean | undefined> = {}) {
   return axios_call_to_result(async () => await apiClient.get<GraficoCVItem[]>("/api/informes/graficos-compras-ventas/", { params }));
 }
+
+export type InformeTipo = "bajo-stock" | "rotacion" | "consolidado" | "graficos-compras-ventas";
+
+export async function exportarInforme(
+  tipo: InformeTipo,
+  formato: "pdf" | "excel",
+  params: Record<string, string | number | boolean | undefined> = {},
+): Promise<Blob> {
+  const response = await apiClient.get(`/api/informes/${tipo}/`, {
+    params: { ...params, formato },
+    responseType: "blob",
+  });
+  return response.data;
+}
+
+export function descargarBlob(blob: Blob, nombreArchivo: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nombreArchivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}

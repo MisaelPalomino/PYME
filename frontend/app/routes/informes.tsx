@@ -78,10 +78,43 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
     });
   };
 
-  function handleExport(type: 'pdf' | 'excel', reportName: string) {
-    toast.info(`Exportando "${reportName}" como ${type.toUpperCase()}...`, {
-      description: 'Generando archivo en el cliente. En producción esto llamará a los servicios de descarga.',
-    });
+  const [exporting, setExporting] = useState(false);
+
+  const tabToEndpoint: Record<string, informesAPI.InformeTipo> = {
+    low_stock: 'bajo-stock',
+    rotation: 'rotacion',
+    consolidated: 'consolidado',
+    charts: 'graficos-compras-ventas',
+  };
+
+  const tabToFilePrefix: Record<string, string> = {
+    low_stock: 'reporte_bajo_stock',
+    rotation: 'reporte_rotacion',
+    consolidated: 'reporte_consolidado',
+    charts: 'grafico_compras_ventas',
+  };
+
+  async function handleExport(type: 'pdf' | 'excel', reportName: string) {
+    const endpoint = tabToEndpoint[activeTab];
+    if (!endpoint) return;
+
+    const params: Record<string, string | number | boolean | undefined> = {};
+    if (categoryFilter !== 'all') params.categoria = Number(categoryFilter);
+    if (activeTab === 'rotation' || activeTab === 'charts') params.periodo = periodFilter;
+
+    const ext = type === 'pdf' ? 'pdf' : 'xlsx';
+    const filename = `${tabToFilePrefix[activeTab]}.${ext}`;
+
+    setExporting(true);
+    try {
+      const blob = await informesAPI.exportarInforme(endpoint, type, params);
+      informesAPI.descargarBlob(blob, filename);
+      toast.success(`"${reportName}" descargado como ${type.toUpperCase()}`);
+    } catch {
+      toast.error(`Error al exportar "${reportName}"`);
+    } finally {
+      setExporting(false);
+    }
   }
 
   // Mapear datos de rotación para Recharts
@@ -199,10 +232,10 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleExport('excel', 'Bajo Stock')}>
+                  <Button size="sm" variant="outline" disabled={exporting} onClick={() => handleExport('excel', 'Bajo Stock')}>
                     <Download className="w-3.5 h-3.5 mr-1" /> Excel
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleExport('pdf', 'Bajo Stock')}>
+                  <Button size="sm" variant="outline" disabled={exporting} onClick={() => handleExport('pdf', 'Bajo Stock')}>
                     <FileText className="w-3.5 h-3.5 mr-1" /> PDF
                   </Button>
                 </div>
@@ -272,10 +305,10 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
                   <CardDescription className="text-xs mt-1">Ventas vs. stock promedio del período</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleExport('excel', 'Rotación')}>
+                  <Button size="sm" variant="outline" disabled={exporting} onClick={() => handleExport('excel', 'Rotación')}>
                     <Download className="w-3.5 h-3.5 mr-1" /> Excel
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleExport('pdf', 'Rotación')}>
+                  <Button size="sm" variant="outline" disabled={exporting} onClick={() => handleExport('pdf', 'Rotación')}>
                     <FileText className="w-3.5 h-3.5 mr-1" /> PDF
                   </Button>
                 </div>
@@ -351,10 +384,10 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
                   <CardDescription className="text-xs mt-1">Bajo stock + rotación + métricas IA + últimas semanas</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleExport('excel', 'Consolidado')}>
+                  <Button size="sm" variant="outline" disabled={exporting} onClick={() => handleExport('excel', 'Consolidado')}>
                     <Download className="w-3.5 h-3.5 mr-1" /> Excel
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleExport('pdf', 'Consolidado')}>
+                  <Button size="sm" variant="outline" disabled={exporting} onClick={() => handleExport('pdf', 'Consolidado')}>
                     <FileText className="w-3.5 h-3.5 mr-1" /> PDF
                   </Button>
                 </div>
@@ -470,10 +503,10 @@ export default function Reports({ loaderData }: Route.ComponentProps) {
                   <CardDescription className="text-xs mt-1">Filtrado por categoría y período seleccionado</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleExport('excel', 'Ventas y Compras')}>
+                  <Button size="sm" variant="outline" disabled={exporting} onClick={() => handleExport('excel', 'Ventas y Compras')}>
                     <Download className="w-3.5 h-3.5 mr-1" /> Excel
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => handleExport('pdf', 'Ventas y Compras')}>
+                  <Button size="sm" variant="outline" disabled={exporting} onClick={() => handleExport('pdf', 'Ventas y Compras')}>
                     <FileText className="w-3.5 h-3.5 mr-1" /> PDF
                   </Button>
                 </div>
