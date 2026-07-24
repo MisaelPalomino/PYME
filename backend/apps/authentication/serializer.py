@@ -15,9 +15,10 @@ class LoginSerializer(serializers.Serializer):
         try:
             user = Usuario.objects.get(username=attrs['username'])
         except Usuario.DoesNotExist:
-            raise serializers.ValidationError("Credenciales inválidas.")
+            raise serializers.ValidationError("Usuario no exite.")
 
-        if not check_password(attrs['password'], user.password):
+        # if not check_password(attrs['password'], user.password):
+        if user.check_password(attrs['password']):
             raise serializers.ValidationError("Credenciales inválidas.")
 
         if not user.activo:
