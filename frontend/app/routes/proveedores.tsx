@@ -160,6 +160,8 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
+                  {
+                  /*
                   <button
                     onClick={() => handleDelete(item.id_proveedor)}
                     className="p-1.5 rounded hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
@@ -167,6 +169,7 @@ export default function Suppliers({ loaderData }: Route.ComponentProps) {
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
+                  */}
                 </div>
               </div>
             </CardHeader>

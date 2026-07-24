@@ -148,7 +148,7 @@ export default function Alerts({ loaderData }: Route.ComponentProps) {
             <Bell className="w-5 h-5" />
             Alertas
             {unreadCount > 0 && (
-              <span className="px-2 py-0.5 bg-destructive text-destructive-foreground rounded-full text-xs">
+              <span className="px-2 py-0.5 bg-destructive text-white rounded-full text-xs">
                 {unreadCount}
               </span>
             )}

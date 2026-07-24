@@ -23,7 +23,7 @@ export async function axios_call_to_result<T>(f: () => Promise<AxiosResponse<T>>
 
       return {
         ok: false,
-        error: "(Que backend retorne buenos errores mrd) " + message
+        error: "" + message
       };
     }
 
