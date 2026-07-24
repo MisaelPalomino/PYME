@@ -75,6 +75,7 @@ export default function Login() {
           </Button>
         </form>
 
+        {/*
         <Button
           type="button"
           variant="outline"
@@ -82,6 +83,7 @@ export default function Login() {
         >
           Crear cuenta
         </Button>
+        */}
       </div>
     </div>
   );
